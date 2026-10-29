@@ -6,6 +6,7 @@
 #include "event_codec.h"
 
 #include <cmath>
+#include <functional>
 #include <iostream>
 #include <string>
 #include <thread>

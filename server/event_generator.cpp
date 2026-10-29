@@ -14,6 +14,7 @@
 #include "event_codec.h"
 
 #include <chrono>
+#include <cstdlib>
 #include <cmath>
 #include <iostream>
 #include <random>

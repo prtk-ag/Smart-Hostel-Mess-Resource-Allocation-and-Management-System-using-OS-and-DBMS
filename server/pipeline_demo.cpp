@@ -14,6 +14,7 @@
 #include <atomic>
 #include <cstdio>
 #include <iostream>
+#include <functional>
 #include <thread>
 #include <vector>
 

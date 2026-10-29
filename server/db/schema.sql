@@ -37,6 +37,17 @@ CREATE TABLE IF NOT EXISTS attendance (
     timestamp     TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Opt-out attendance: every student is assumed PRESENT for a meal unless a row
+-- exists here. UNIQUE stops the same student being marked absent twice.
+CREATE TABLE IF NOT EXISTS absences (
+    absence_id  INTEGER PRIMARY KEY AUTOINCREMENT,
+    student_id  INTEGER NOT NULL REFERENCES students(student_id),
+    meal_id     INTEGER NOT NULL REFERENCES meals(meal_id),
+    reason      TEXT,
+    timestamp   TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (student_id, meal_id)
+);
+
 CREATE TABLE IF NOT EXISTS meal_prep_logs (
     prep_id        INTEGER PRIMARY KEY AUTOINCREMENT,
     meal_id        INTEGER NOT NULL REFERENCES meals(meal_id),
@@ -64,6 +75,7 @@ CREATE TABLE IF NOT EXISTS alerts (
 -- Indexes on hot query paths (Phase 1 groundwork for the indexing experiment)
 CREATE INDEX IF NOT EXISTS idx_prep_meal ON meal_prep_logs(meal_id);
 CREATE INDEX IF NOT EXISTS idx_attendance_meal_student ON attendance(meal_id, student_id);
+CREATE INDEX IF NOT EXISTS idx_absence_meal ON absences(meal_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_name ON inventory(item_name);
 
 -- Low-stock trigger: fires whenever an inventory update drops quantity

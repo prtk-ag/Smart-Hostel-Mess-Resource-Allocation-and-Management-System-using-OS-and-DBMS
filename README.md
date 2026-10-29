@@ -7,6 +7,23 @@ four separate syllabus-topic demos bolted together.
 
 See `docs/` (or the project proposal PDF) for the full architecture writeup.
 
+## SHRM Control Center (the demo platform)
+
+`python3 dashboard/app.py` (set `SHRM_PORT=8090` if 8080 is taken) then open the printed address. Eight tabs:
+Overview, **Attendance** (everyone present by default; mark yourself absent per meal or for the day,
+stored in the `absences` table with a UNIQUE(student, meal) constraint, locked once a meal's plan is
+approved), **AI planning agent**, Live pipeline, Scheduling, Concurrency (race + deadlock), Performance
+(index benchmark, test programs, scheduler, throughput) and Database (tables, indexes, trigger, live foreign-key test).
+
+**The planning agent** (`dashboard/agent.py`) is a statistical agent, not an LLM, and works offline: it
+forecasts real diners from opt-outs and the historical no-show rate (exponential smoothing, weighted
+toward the same weekday, with a 90% safety margin), turns that into plates and ingredient needs, checks
+stock, and waits for a human to approve. Approval deducts stock and logs prep in ONE transaction
+(`BEGIN IMMEDIATE`, all or nothing; the low-stock trigger fires on its own). Closing a meal with the real
+diner count writes waste logs and adds the day to history, so the agent learns. Past history is
+synthetic demo data; the 7-day replay compares the agent with the old habit of cooking for everyone.
+App data lives in `shrm_app.db` (delete it to start fresh). The original `dashboard/server.py` still works on its own.
+
 ## Current status: Phases 1–10 complete
 
 - **Phase 9 (deadlock):** `shrm_deadlock_demo` builds the classic two-lock deadlock on purpose
@@ -131,7 +148,7 @@ a before/after bar chart of the race condition. Needs only Python 3 (no pip
 installs) and the project built first.
 
 ```bash
-python3 dashboard/server.py          # Windows: py dashboard\server.py   (or run_dashboard.bat)
+python3 dashboard/app.py          # Windows: py dashboard\app.py   (or run_dashboard.bat)
 # then open http://127.0.0.1:8080
 ```
 
@@ -221,7 +238,7 @@ shrm/
 │   ├── test_event_queue.cpp     # Phase 3 correctness check (shrm_queue_test)
 │   ├── test_race_condition.cpp  # Phase 4/5 race demo (shrm_race_demo)
 │   └── test_scheduler.cpp       # Phase 6/7 scheduler tests (shrm_scheduler_test)
-├── dashboard/                # browser interface: server.py (stdlib only) + index.html
+├── dashboard/                # browser interface: app.py + app.html (Control Center), agent.py (planning agent), server.py + index.html (original, reused)
 ├── CMakeLists.txt
 └── README.md
 ```

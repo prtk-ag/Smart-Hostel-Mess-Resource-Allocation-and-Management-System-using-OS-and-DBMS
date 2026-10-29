@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SHRM Control Center</title>
+<style>
+:root{
+  --bg:#f5f6f8; --card:#ffffff; --ink:#1b2430; --muted:#667085; --line:#e3e6eb;
+  --blue:#2b5b91; --teal:#0b8a7a; --amber:#c47f00; --red:#c0392b; --green:#2e8b57;
+  --c-fcfs:#8896a8; --c-sjf:#2b5b91; --c-prio:#0b8a7a;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#10151c; --card:#18202a; --ink:#e8edf3; --muted:#93a0b2; --line:#283241;
+    --blue:#6ea3e0; --teal:#3ccbb5; --amber:#e5a93a; --red:#ef6f60; --green:#5fc08a;
+    --c-fcfs:#7d8ba0; --c-sjf:#6ea3e0; --c-prio:#3ccbb5; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:18px 20px 0;max-width:1100px;margin:0 auto}
+h1{font-size:20px;margin:0}
+.sub{color:var(--muted);font-size:13px;margin-top:2px}
+nav{display:flex;gap:4px;margin:14px 0 0;border-bottom:1px solid var(--line)}
+nav button{background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);padding:9px 14px;font:inherit;cursor:pointer}
+nav button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--blue);font-weight:600}
+main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
+.panel{display:none} .panel.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.row{display:grid;gap:12px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:12px}
+.kpi .n{font-size:28px;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi .l{color:var(--muted);font-size:13px}
+.two{grid-template-columns:repeat(auto-fit,minmax(340px,1fr));margin-bottom:12px}
+h2{font-size:14px;margin:0 0 10px;color:var(--muted);font-weight:600;letter-spacing:.02em;text-transform:uppercase}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:12px}
+.controls label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:3px}
+input[type=number]{width:96px;padding:7px 8px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--ink);font:inherit}
+button.btn{padding:8px 16px;border-radius:8px;border:1px solid var(--blue);background:var(--blue);color:#fff;font:inherit;cursor:pointer}
+button.btn.ghost{background:none;color:var(--blue)}
+button.btn:disabled{opacity:.45;cursor:default}
+.status{font-size:13px;color:var(--muted);align-self:center}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:6px}
+.dot.live{background:var(--green);animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.35}}
+@media (prefers-reduced-motion: reduce){.dot.live{animation:none}}
+.inv{display:grid;grid-template-columns:110px 1fr 90px;gap:8px;align-items:center;margin:7px 0;font-size:14px}
+.bar{position:relative;height:14px;background:var(--line);border-radius:7px}
+.bar>i{position:absolute;left:0;top:0;bottom:0;border-radius:7px;background:var(--teal);transition:width .4s}
+.bar>i.low{background:var(--red)}
+.bar>b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.55}
+.inv .q{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.alert{font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)} .alert:last-child{border:0}
+.alert time{color:var(--muted);margin-right:6px}
+.log{font:12px/1.5 var(--mono);color:var(--muted);max-height:190px;overflow:auto;white-space:pre-wrap}
+.note{color:var(--muted);font-size:13px;margin:0 0 12px}
+svg text{font-family:inherit;fill:var(--ink)} svg .mut{fill:var(--muted)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)} th{color:var(--muted);font-weight:600;font-size:12px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.legend{display:flex;gap:14px;font-size:13px;color:var(--muted);margin-top:6px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;background:var(--c)}
+pre.out{font:12px/1.45 var(--mono);color:var(--muted);white-space:pre-wrap;margin:10px 0 0;max-height:220px;overflow:auto}
+
+header{max-width:1200px} main{max-width:1200px}
+nav{overflow-x:auto;white-space:nowrap}
+.hero{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;background:var(--line);color:var(--muted)}
+.pill.ok{background:color-mix(in srgb,var(--green) 18%,transparent);color:var(--green)}
+.pill.warn{background:color-mix(in srgb,var(--amber) 20%,transparent);color:var(--amber)}
+.pill.bad{background:color-mix(in srgb,var(--red) 18%,transparent);color:var(--red)}
+.pill.blue{background:color-mix(in srgb,var(--blue) 16%,transparent);color:var(--blue)}
+.meals{grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-bottom:12px}
+.meal h3{margin:0;font-size:17px;text-transform:capitalize} .meal .dish{color:var(--muted);font-size:13px;margin-bottom:8px}
+.big{font-size:30px;font-weight:650;line-height:1.1;font-variant-numeric:tabular-nums}
+.kv{display:flex;justify-content:space-between;font-size:14px;padding:4px 0;border-bottom:1px solid var(--line)} .kv:last-child{border:0} .kv span:first-child{color:var(--muted)}
+.band{position:relative;height:18px;border-radius:9px;background:var(--line);margin:8px 0 2px}
+.band i{position:absolute;top:0;bottom:0;border-radius:9px;background:color-mix(in srgb,var(--teal) 35%,transparent)}
+.band b{position:absolute;top:-3px;bottom:-3px;width:3px;background:var(--teal);border-radius:2px}
+.band u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--red);opacity:.8}
+.tbl-wrap{max-height:62vh;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.tbl-wrap th{position:sticky;top:0;background:var(--card);z-index:1}
+.sw{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.sw button{border:0;background:none;padding:4px 10px;font:inherit;font-size:12.5px;color:var(--muted);cursor:pointer}
+.sw button.on-p{background:color-mix(in srgb,var(--green) 18%,transparent);color:var(--green);font-weight:600}
+.sw button.on-a{background:color-mix(in srgb,var(--red) 18%,transparent);color:var(--red);font-weight:600}
+.sw.locked{opacity:.5;pointer-events:none}
+input[type=text],input[type=search],select{padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--ink);font:inherit}
+.reason{font-size:13px;color:var(--muted);background:var(--bg);border-left:3px solid var(--teal);padding:8px 10px;border-radius:0 6px 6px 0;margin:8px 0}
+.mini{font-size:12px;color:var(--muted)}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:9}
+.toast.on{opacity:1}
+.cmp{display:grid;grid-template-columns:120px 1fr 70px;gap:8px;align-items:center;margin:6px 0;font-size:13.5px}
+.cmp .bar{height:16px}
+.tests li{list-style:none;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.tests{padding:0;margin:0}
+button.btn.sm{padding:5px 11px;font-size:13px}
+button.btn.warn{background:var(--amber);border-color:var(--amber)}
+.up{font-size:12px;color:var(--muted)}
+</style></head>
+<body>
+<header>
+  <h1>SHRM &middot; Smart Hostel Mess Resource Manager</h1>
+  <div class="sub">Team MiraiSentinals &middot; Team ID OSDBMS-V-2026-T051 &middot; runs the real C++ programs and a SQLite database</div>
+  <nav role="tablist" id="tabs">
+    <button role="tab" aria-selected="true" data-tab="overview">Overview</button>
+    <button role="tab" aria-selected="false" data-tab="attend">Attendance</button>
+    <button role="tab" aria-selected="false" data-tab="agent">AI planning agent</button>
+    <button role="tab" aria-selected="false" data-tab="live">Live pipeline</button>
+    <button role="tab" aria-selected="false" data-tab="sched">Scheduling</button>
+    <button role="tab" aria-selected="false" data-tab="conc">Concurrency</button>
+    <button role="tab" aria-selected="false" data-tab="perf">Performance</button>
+    <button role="tab" aria-selected="false" data-tab="dbv">Database</button>
+  </nav>
+</header>
+<main>
+
+<section class="panel on" id="overview">
+  <div class="hero"><div><b id="ov-date"></b> <span class="mini" id="ov-sub"></span></div>
+    <div><button class="btn ghost sm" id="resetday">Reset today (demo)</button></div></div>
+  <div class="row kpis" id="ov-kpis"></div>
+  <div class="row meals" id="ov-meals"></div>
+  <div class="row two">
+    <div class="card"><h2>Stock after today's plans <span style="text-transform:none;font-weight:400">(line = reorder level)</span></h2><div id="ov-inv"></div></div>
+    <div class="card"><h2>Low-stock alerts <span style="text-transform:none;font-weight:400">(database trigger)</span></h2><div id="ov-alerts"><span class="note">None yet.</span></div></div>
+  </div>
+  <div class="card"><h2>Cooked vs eaten &middot; last 14 days <select id="ov-histmeal" style="float:right;text-transform:none"><option>lunch</option><option>dinner</option><option>breakfast</option></select></h2>
+    <div id="ov-hist"></div><div class="legend"><span style="--c:var(--red)">plates cooked (old habit)</span><span style="--c:var(--teal)">students who actually ate</span></div>
+    <p class="mini" style="margin:8px 0 0">History before today is synthetic demo data. Meals closed in this app are added as real history.</p></div>
+</section>
+
+<section class="panel" id="attend">
+  <p class="note">Everyone is <b>present by default</b>. A student only has to act if they will <b>not</b> eat. Absences are stored per meal in the <code>absences</code> table (one row per student and meal, enforced by a UNIQUE constraint) and feed the agent's forecast. Once a meal's plan is approved its attendance is locked.</p>
+  <div class="controls">
+    <label>Search name or room<input type="search" id="q" placeholder="e.g. Tanishq or B-204"></label>
+    <label><span>&nbsp;</span><span><input type="checkbox" id="onlyabs"> only show absent</span></label>
+    <span class="status" id="att-sum"></span>
+  </div>
+  <div class="controls" id="att-bulk"></div>
+  <div class="tbl-wrap"><table id="roster"></table></div>
+</section>
+
+<section class="panel" id="agent">
+  <p class="note">A <b>planning agent</b>: it predicts how many students will really eat (opt-outs plus the usual no-show rate from past service), proposes how much to cook, checks stock, and waits for a human to approve. It is a statistical model (exponential smoothing + safety margin), not a language model, and it runs fully offline. After service you close the meal with the real count and the agent learns from it.</p>
+  <div class="row meals" id="ag-meals"></div>
+  <div class="card"><h2>How good is it? &middot; replay of the last 7 days</h2><div id="ag-back"></div>
+    <p class="mini" style="margin:8px 0 0">Each past meal is forecast using only data from before that day. The "old habit" is cooking for everyone who did not opt out. Past data is synthetic demo data, so treat the percentages as a demonstration of the method.</p></div>
+</section>
+
+<section class="panel" id="live">
+  <p class="note">Starts two separate programs joined by a pipe: <b>event generator</b> &rarr; pipe &rarr; <b>IPC server</b> (queue, 3 worker threads, SQLite). This page only reads the database they write.</p>
+  <div class="controls">
+    <label>Events<input type="number" id="count" value="800" min="1" max="5000"></label>
+    <label>Delay per event (ms)<input type="number" id="delay" value="15" min="0" max="1000"></label>
+    <label>Bad lines<input type="number" id="bad" value="4" min="0" max="50"></label>
+    <button class="btn" id="start">Start stream</button>
+    <button class="btn ghost" id="stop" disabled>Stop</button>
+    <span class="status"><span class="dot" id="dot"></span><span id="statustext">idle</span></span>
+  </div>
+  <div class="row kpis">
+    <div class="card kpi"><div class="n" id="k-att">0</div><div class="l">attendance records</div></div>
+    <div class="card kpi"><div class="n" id="k-prep">0</div><div class="l">prep logs</div></div>
+    <div class="card kpi"><div class="n" id="k-waste">0</div><div class="l">waste logs</div></div>
+    <div class="card kpi"><div class="n" id="k-alerts">0</div><div class="l">low-stock alerts</div></div>
+  </div>
+  <div class="row two">
+    <div class="card"><h2>Inventory <span style="text-transform:none;font-weight:400">(line = reorder level)</span></h2><div id="inv"><span class="note">Start a stream to create the database.</span></div></div>
+    <div class="card"><h2>Records written over time</h2><div id="chart"></div><div class="legend"><span style="--c:var(--blue)">attendance</span><span style="--c:var(--teal)">prep</span><span style="--c:var(--amber)">waste</span></div></div>
+  </div>
+  <div class="row two">
+    <div class="card"><h2>Low-stock alerts (trigger)</h2><div id="alerts"><span class="note">None yet.</span></div></div>
+    <div class="card"><h2>Program log</h2><div class="log" id="log">&nbsp;</div></div>
+  </div>
+</section>
+
+<section class="panel" id="sched">
+  <p class="note">One cooking station, six dishes, same workload for all three algorithms. Computed by the C++ scheduler, not by this page.</p>
+  <div id="sched-cards" class="row" style="gap:12px"></div>
+  <div class="card" style="margin-top:12px"><h2>Comparison (minutes)</h2><div id="sched-table"></div></div>
+</section>
+
+
+<section class="panel" id="conc">
+  <div class="row two">
+    <div class="card"><h2>Race condition</h2>
+      <p class="note">10 threads each deduct 1 kg from the same stock 20 times (200 deductions). Run once without a transaction and once with one.</p>
+      <div class="controls"><button class="btn" id="runrace">Run race demo</button><span class="status" id="racestatus"></span></div>
+      <div id="racechart"><span class="note">Press the button.</span></div><pre class="out" id="raceout" hidden></pre></div>
+    <div class="card"><h2>Deadlock</h2>
+      <p class="note">Two workers take the inventory and alerts locks in opposite order. The demo detects the deadlock, then fixes it with lock ordering and with back-off.</p>
+      <div class="controls"><button class="btn" id="rundead">Run deadlock demo</button><span class="status" id="deadstatus"></span></div>
+      <pre class="out" id="deadout">Press the button (takes about 4 seconds).</pre></div>
+  </div>
+</section>
+
+<section class="panel" id="perf">
+  <div class="hero"><span class="note" style="margin:0">Every number here comes from running the real programs when you open this tab.</span><button class="btn ghost sm" id="reperf">Run again</button></div>
+  <div class="row two">
+    <div class="card"><h2>Indexing experiment</h2><div id="pf-index"><span class="note">Running…</span></div></div>
+    <div class="card"><h2>Automated test programs</h2><ul class="tests" id="pf-tests"><li class="note">Running…</li></ul></div>
+  </div>
+  <div class="row two" style="margin-top:12px">
+    <div class="card"><h2>Scheduling (average waiting time, lower is better)</h2><div id="pf-sched"><span class="note">Running…</span></div></div>
+    <div class="card"><h2>Stream throughput</h2><div id="pf-stream"><span class="note">Start a stream on the Live pipeline tab to see events per second.</span></div></div>
+  </div>
+</section>
+
+<section class="panel" id="dbv">
+  <div class="row kpis" id="db-kpis"></div>
+  <div class="row two">
+    <div class="card"><h2>Tables</h2><div id="db-tables"></div></div>
+    <div class="card"><h2>Indexes and trigger</h2><div id="db-idx"></div></div>
+  </div>
+  <div class="row two" style="margin-top:12px">
+    <div class="card"><h2>Foreign key check (live)</h2><p class="note">Tries to record an absence for a student that does not exist. The database must refuse.</p>
+      <button class="btn" id="fktest">Try the bad insert</button><div id="fkout" style="margin-top:10px"></div></div>
+    <div class="card"><h2>Query plan</h2><pre class="out" id="db-plan" style="max-height:none"></pre></div>
+  </div>
+</section>
+
+</main>
+<div class="toast" id="toast"></div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+async function get(u) { return (await fetch(u)).json(); }
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 2800); }
+const cap = s => s[0].toUpperCase() + s.slice(1);
+
+/* ---------- tabs ---------- */
+const loaders = {overview: loadOverview, attend: loadRoster, agent: loadOverview, sched: () => !schedLoaded && loadSched(), perf: loadPerf, dbv: loadDb};
+function show(tab) {
+  document.querySelectorAll('#tabs button').forEach(x => x.setAttribute('aria-selected', x.dataset.tab === tab));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === tab));
+  (loaders[tab] || (() => 0))(); history.replaceState(null, '', '#' + tab);
+}
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => show(b.dataset.tab));
+
+/* ---------- live pipeline ---------- */
+const series = []; let lastRunning = false;
+async function post(url, body) {
+  const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body||{})});
+  return r.json();
+}
+$('#start').onclick = async () => {
+  series.length = 0;
+  const r = await post('/api/stream/start', {count:+$('#count').value, delay_ms:+$('#delay').value, bad:+$('#bad').value});
+  if (r.error) alert(r.error);
+};
+$('#stop').onclick = () => post('/api/stream/stop');
+
+function drawChart() {
+  const W = 480, H = 190, L = 34, B = 22, T = 8, R = 8;
+  if (series.length < 2) { $('#chart').innerHTML = '<span class="note">Waiting for data…</span>'; return; }
+  const t1 = series[series.length-1].t, ymax = Math.max(10, ...series.map(p => Math.max(p.a, p.p, p.w)));
+  const x = t => L + (W-L-R) * t / Math.max(t1, 1), y = v => H-B - (H-B-T) * v / ymax;
+  const path = k => series.map((p,i) => (i?'L':'M') + x(p.t).toFixed(1) + ' ' + y(p[k]).toFixed(1)).join(' ');
+  let g = '';
+  for (let i = 0; i <= 4; i++) { const v = ymax*i/4, yy = y(v);
+    g += `<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="${css('--line')}"/><text class="mut" x="${L-6}" y="${yy+4}" font-size="11" text-anchor="end">${Math.round(v)}</text>`; }
+  g += `<text class="mut" x="${W-R}" y="${H-5}" font-size="11" text-anchor="end">${t1.toFixed(0)} s</text>`;
+  $('#chart').innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Records written over time">${g}
+    <path d="${path('a')}" fill="none" stroke="${css('--blue')}" stroke-width="2"/>
+    <path d="${path('p')}" fill="none" stroke="${css('--teal')}" stroke-width="2"/>
+    <path d="${path('w')}" fill="none" stroke="${css('--amber')}" stroke-width="2"/></svg>`;
+}
+
+async function poll() {
+  try {
+    const s = await (await fetch('/api/state')).json();
+    const c = s.counts || {};
+    $('#k-att').textContent = c.attendance ?? 0; $('#k-prep').textContent = c.prep ?? 0;
+    $('#k-waste').textContent = c.waste ?? 0; $('#k-alerts').textContent = c.alerts ?? 0;
+    const run = s.stream.running;
+    $('#dot').className = 'dot' + (run ? ' live' : '');
+    $('#statustext').textContent = run ? `streaming… ${s.stream.elapsed}s` : (s.stream.elapsed ? `finished in ${s.stream.elapsed}s` : 'idle');
+    $('#start').disabled = run; $('#stop').disabled = !run;
+    if (s.inventory.length) {
+      $('#inv').innerHTML = s.inventory.map(i => {
+        const max = Math.max(i.quantity_available, i.reorder_threshold * 4, 1);
+        const cap = Math.max(...s.inventory.filter(z => z.item_name === i.item_name).map(z => z.quantity_available), i.reorder_threshold*5, 100);
+        const w = Math.min(100, 100 * i.quantity_available / cap), tl = Math.min(100, 100 * i.reorder_threshold / cap);
+        const low = i.quantity_available < i.reorder_threshold;
+        return `<div class="inv"><span>${esc(i.item_name)}</span><div class="bar"><i class="${low?'low':''}" style="width:${w}%"></i><b style="left:${tl}%"></b></div><span class="q">${i.quantity_available.toFixed(1)} ${esc(i.unit)}</span></div>`;
+      }).join('');
+    }
+    if (s.alerts.length) $('#alerts').innerHTML = s.alerts.map(a => `<div class="alert"><time>${esc(a.timestamp)}</time>${esc(a.message)}</div>`).join('');
+    const log = $('#log'), atBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 8;
+    log.textContent = s.stream.log.length ? s.stream.log.join('\n') : ' ';
+    if (atBottom) log.scrollTop = log.scrollHeight;
+    if (run || lastRunning) { series.push({t: s.stream.elapsed, a: c.attendance||0, p: c.prep||0, w: c.waste||0}); drawChart(); }
+    lastRunning = run;
+  } catch (e) { $('#statustext').textContent = 'dashboard server not reachable'; }
+}
+setInterval(poll, 700); poll();
+
+/* ---------- scheduling ---------- */
+let schedLoaded = false;
+const colours = {FCFS:'--c-fcfs', SJF:'--c-sjf', Priority:'--c-prio'};
+async function loadSched() {
+  const d = await (await fetch('/api/schedules')).json();
+  if (d.error) { $('#sched-cards').innerHTML = `<div class="card">${esc(d.error)}</div>`; return; }
+  schedLoaded = true;
+  const maxT = Math.max(...d.schedules.map(s => s.makespan));
+  $('#sched-cards').innerHTML = d.schedules.map(s => {
+    const W = 900, L = 10, H = 74, k = (W-2*L) / maxT, col = css(colours[s.algorithm]);
+    const segs = s.jobs.map(j => {
+      const x = L + j.start*k, w = (j.end-j.start)*k;
+      return `<g><rect x="${x}" y="8" width="${w-2}" height="36" rx="4" fill="${col}" opacity="${j.id%2?1:.78}"><title>${esc(j.name)}: starts ${j.start}, ends ${j.end}, waited ${j.waiting} min</title></rect>
+        <text x="${x+w/2-1}" y="31" font-size="12" text-anchor="middle" fill="#fff" style="fill:#fff">${w > j.name.length*7+8 ? esc(j.name) : ''}</text>
+        <text class="mut" x="${x}" y="62" font-size="11">${j.start}</text></g>`;
+    }).join('');
+    return `<div class="card"><h2 style="color:${col}">${s.algorithm} &middot; avg wait ${s.avg_waiting.toFixed(2)} min</h2>
+      <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${s.algorithm} schedule">${segs}<text class="mut" x="${W-L}" y="62" font-size="11" text-anchor="end">${s.makespan}</text></svg>
+      <div class="note" style="margin:4px 0 0">Order: ${s.jobs.map(j => esc(j.name)).join(' → ')}</div></div>`;
+  }).join('');
+  $('#sched-table').innerHTML = `<table><tr><th>Algorithm</th><th class="num">Avg wait</th><th class="num">Avg turnaround</th><th class="num">Makespan</th></tr>` +
+    d.schedules.map(s => `<tr><td>${s.algorithm}</td><td class="num">${s.avg_waiting.toFixed(2)}</td><td class="num">${s.avg_turnaround.toFixed(2)}</td><td class="num">${s.makespan}</td></tr>`).join('') +
+    `</table><p class="note" style="margin:10px 0 0">Same total time for all three — only the order changes. SJF waits least but can starve long dishes; Priority can starve low-priority ones.</p>`;
+}
+
+/* ---------- race ---------- */
+$('#runrace').onclick = async () => {
+  $('#runrace').disabled = true; $('#racestatus').textContent = 'running both versions…';
+  const r = await post('/api/race');
+  $('#runrace').disabled = false;
+  if (r.error) { $('#racestatus').textContent = r.error; return; }
+  $('#racestatus').textContent = '';
+  const W = 600, H = 150, L = 190, m = r.total;
+  const row = (label, lost, y, col) => {
+    const w = (W-L-70) * lost / m;
+    return `<text x="${L-10}" y="${y+21}" font-size="14" text-anchor="end">${label}</text>
+      <rect x="${L}" y="${y}" width="${Math.max(w,2)}" height="30" rx="4" fill="${col}"/>
+      <text x="${L+Math.max(w,2)+8}" y="${y+21}" font-size="14" font-weight="600">${lost} lost</text>`;
+  };
+  $('#racechart').innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Lost updates, unsafe versus transactional">
+    ${row('No transaction', r.unsafe_lost, 20, css('--red'))}${row('With transaction', r.safe_lost, 75, css('--green'))}
+    <text class="mut" x="${L}" y="130" font-size="12">out of ${m} deductions</text></svg>`;
+  $('#raceout').hidden = false; $('#raceout').textContent = r.output;
+};
+
+
+/* ======================= NEW: overview + agent ======================= */
+let OV = null;
+const pillFor = m => !m.plan ? ['Planned', 'blue'] : (m.plan.closed_at ? ['Closed', 'ok'] : ['Approved', 'warn']);
+async function loadOverview() {
+  OV = await get('/api/overview');
+  if (OV.error) { toast(OV.error); return; }
+  renderOverview(); renderAgent();
+}
+function renderOverview() {
+  $('#ov-date').textContent = OV.weekday + ', ' + OV.date;
+  $('#ov-sub').textContent = OV.total + ' students in the hostel';
+  const exp = OV.meals.reduce((a, m) => a + m.forecast.expected, 0);
+  const saved = OV.meals.reduce((a, m) => a + (m.naive_plates - (m.plan ? m.plan.plates : m.forecast.plates)), 0);
+  const low = OV.inventory.filter(i => i.quantity_available < i.reorder_threshold).length;
+  const done = OV.meals.filter(m => m.plan).length;
+  $('#ov-kpis').innerHTML = [
+    [OV.total, 'students'], [OV.meals.reduce((a, m) => a + m.declared_absent, 0), 'absences marked today (all meals)'],
+    [Math.round(exp), 'expected plates eaten today'], [saved, 'plates saved vs old habit today'],
+    [done + ' / 3', 'meal plans approved'], [low, 'items below reorder level']
+  ].map(k => `<div class="card kpi"><div class="n">${k[0]}</div><div class="l">${k[1]}</div></div>`).join('');
+  $('#ov-meals').innerHTML = OV.meals.map(m => {
+    const f = m.forecast, [pl, pc] = pillFor(m), e = Math.max(m.eligible, 1);
+    const plates = m.plan ? m.plan.plates : f.plates;
+    return `<div class="card meal"><div style="display:flex;justify-content:space-between;align-items:start"><h3>${esc(m.meal_type)}</h3><span class="pill ${pc}">${pl}</span></div>
+      <div class="dish">${esc(m.dish)}</div>
+      <div class="big">${Math.round(f.expected)} <span class="mini">expected diners (${f.low}&ndash;${f.high})</span></div>
+      <div class="band" title="expected range out of ${m.eligible} eligible"><i style="left:${100*f.low/e}%;width:${Math.max(1.5,100*(f.high-f.low)/e)}%"></i><b style="left:${100*f.expected/e}%"></b></div>
+      <div class="mini" style="margin-bottom:8px">scale: 0 to ${m.eligible} students who did not opt out</div>
+      <div class="kv"><span>Opted out</span><span>${m.declared_absent}</span></div>
+      <div class="kv"><span>Agent plates</span><b>${plates}</b></div>
+      <div class="kv"><span>Old habit (cook for all who did not opt out)</span><span>${m.naive_plates}</span></div>
+      ${m.plan && m.plan.closed_at ? `<div class="kv"><span>Actually ate / wasted plates</span><span>${m.plan.actual_diners} / ${m.plan.waste_plates}</span></div>` : ''}</div>`;
+  }).join('');
+  $('#ov-inv').innerHTML = OV.inventory.map(i => {
+    const capv = Math.max(i.quantity_available, i.reorder_threshold * 6, 1);
+    const low = i.quantity_available < i.reorder_threshold;
+    return `<div class="inv"><span>${esc(i.item_name)}</span><div class="bar"><i class="${low ? 'low' : ''}" style="width:${Math.min(100, 100 * i.quantity_available / capv)}%"></i><b style="left:${Math.min(100, 100 * i.reorder_threshold / capv)}%"></b></div><span class="q">${i.quantity_available.toFixed(1)} ${esc(i.unit)}</span></div>`;
+  }).join('');
+  if (OV.alerts.length) $('#ov-alerts').innerHTML = OV.alerts.map(a => `<div class="alert"><time>${esc(a.timestamp)}</time>${esc(a.message)}</div>`).join('');
+  else $('#ov-alerts').innerHTML = '<span class="note">None yet. Approve a plan that drains an item below its reorder level and the database trigger writes one.</span>';
+  drawHist();
+}
+$('#ov-histmeal').onchange = () => OV && drawHist();
+function drawHist() {
+  const meal = $('#ov-histmeal').value, rows = OV.history.filter(r => r.meal_type === meal).slice(-14);
+  if (rows.length < 2) { $('#ov-hist').innerHTML = ''; return; }
+  const W = 900, H = 210, L = 36, B = 26, T = 10, R = 10;
+  const ymax = Math.max(...rows.map(r => r.cooked)) * 1.05, ymin = Math.min(...rows.map(r => r.attended)) * 0.85;
+  const x = i => L + (W - L - R) * i / (rows.length - 1), y = v => H - B - (H - B - T) * (v - ymin) / (ymax - ymin);
+  const path = k => rows.map((r, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(r[k]).toFixed(1)).join(' ');
+  let g = '';
+  for (let i = 0; i <= 4; i++) { const v = ymin + (ymax - ymin) * i / 4; g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="${css('--line')}"/><text class="mut" x="${L - 6}" y="${y(v) + 4}" font-size="11" text-anchor="end">${Math.round(v)}</text>`; }
+  g += rows.map((r, i) => i % 2 === 0 ? `<text class="mut" x="${x(i)}" y="${H - 8}" font-size="10.5" text-anchor="middle">${r.date.slice(5)}</text>` : '').join('');
+  $('#ov-hist').innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Plates cooked versus students who ate">${g}
+    <path d="${path('cooked')}" fill="none" stroke="${css('--red')}" stroke-width="2"/><path d="${path('attended')}" fill="none" stroke="${css('--teal')}" stroke-width="2.5"/></svg>`;
+}
+$('#resetday').onclick = async () => { if (!confirm("Undo today's approvals, absences and stock changes?")) return; await post('/api/reset'); toast('Today reset'); loadOverview(); loadRoster(); };
+
+function renderAgent() {
+  $('#ag-meals').innerHTML = OV.meals.map(m => {
+    const f = m.forecast, [pl, pc] = pillFor(m), plates = m.plan ? m.plan.plates : f.plates;
+    const rows = m.ingredients.map(i => `<tr><td>${esc(i.item)}</td><td class="num">${i.need} ${esc(i.unit)}</td><td class="num">${i.stock}</td><td class="num">${i.after}</td>
+      <td><span class="pill ${i.status === 'ok' ? 'ok' : i.status === 'low' ? 'warn' : 'bad'}">${i.status === 'ok' ? 'ok' : i.status === 'low' ? 'low after' : 'short'}</span>${i.reorder ? ` <span class="mini">order ${i.reorder} ${esc(i.unit)}</span>` : ''}</td></tr>`).join('');
+    const anyShort = m.ingredients.some(i => i.status === 'short');
+    let actions;
+    if (!m.plan) actions = `<button class="btn" data-act="approve" data-m="${m.meal_id}" ${anyShort ? 'disabled' : ''}>Approve plan (${plates} plates)</button> ${anyShort ? '<span class="mini">not enough stock</span>' : ''}`;
+    else if (!m.plan.closed_at) actions = `<button class="btn ghost sm" data-act="sim" data-m="${m.meal_id}">Simulate service</button>
+      <input type="number" id="act-${m.meal_id}" min="0" max="${OV.total}" placeholder="real diners" style="width:110px"> <button class="btn sm" data-act="close" data-m="${m.meal_id}">Close meal</button>`;
+    else actions = `<span class="pill ok">Closed</span> <span class="mini">${m.plan.actual_diners} ate, ${m.plan.waste_plates} plates wasted (agent expected ${Math.round(m.plan.expected)})</span>`;
+    return `<div class="card meal"><div style="display:flex;justify-content:space-between"><h3>${esc(m.meal_type)}</h3><span class="pill ${pc}">${pl}</span></div><div class="dish">${esc(m.dish)}</div>
+      <div class="reason">${esc(f.reason)}</div>
+      <table><tr><th>Ingredient</th><th class="num">Needed</th><th class="num">In stock</th><th class="num">After</th><th>Status</th></tr>${rows}</table>
+      <div style="margin-top:12px">${actions}</div></div>`;
+  }).join('');
+  const b = OV.backtest;
+  if (b) {
+    const pair = (label, a, n, unit) => { const mx = Math.max(a, n, 1); return `<div class="cmp"><span>${label}</span><div><div class="bar" style="margin-bottom:3px"><i style="width:${100 * a / mx}%"></i></div><div class="bar"><i style="width:${100 * n / mx}%;background:var(--c-fcfs)"></i></div></div><span class="mini">${a} vs ${n}</span></div>`; };
+    const cut = b.naive_wasted_plates ? Math.round(100 * (1 - b.agent_wasted_plates / b.naive_wasted_plates)) : 0;
+    $('#ag-back').innerHTML = `<div class="row two" style="margin:0"><div>
+      ${pair('Forecast error (plates, avg)', b.agent_mae, b.naive_mae)}${pair('Wasted plates (' + b.meals_tested + ' meals)', b.agent_wasted_plates, b.naive_wasted_plates)}${pair('Plates short', b.agent_short_plates, b.naive_short_plates)}
+      <div class="legend"><span style="--c:var(--teal)">agent</span><span style="--c:var(--c-fcfs)">old habit</span></div></div>
+      <div><div class="big">${cut}%</div><div class="mini">less wasted food than cooking for everyone who did not opt out, with ${b.agent_short_plates} plates short in the replay.</div></div></div>`;
+  }
+}
+document.addEventListener('click', async e => {
+  const b = e.target.closest('button[data-act]'); if (!b || !b.closest('#ag-meals')) return;
+  const m = +b.dataset.m; let r;
+  b.disabled = true;
+  if (b.dataset.act === 'approve') r = await post('/api/agent/approve', {meal_id: m});
+  else if (b.dataset.act === 'sim') r = await post('/api/meal/close', {meal_id: m, simulate: true});
+  else { const v = $('#act-' + m).value; if (v === '') { toast('Enter the real diner count'); b.disabled = false; return; } r = await post('/api/meal/close', {meal_id: m, actual: +v}); }
+  if (r.error) toast(r.error); else toast(b.dataset.act === 'approve' ? `Approved: ${r.plates} plates, stock deducted in one transaction` : `Closed: ${r.actual} ate, ${r.waste_plates} plates wasted`);
+  loadOverview(); loadRoster();
+});
+
+/* ======================= NEW: attendance ======================= */
+let ROSTER = null;
+async function loadRoster() { ROSTER = await get('/api/roster?q=' + encodeURIComponent($('#q').value)); renderRoster(); }
+let qt; $('#q').oninput = () => { clearTimeout(qt); qt = setTimeout(loadRoster, 200); };
+$('#onlyabs').onchange = () => ROSTER && renderRoster();
+function renderRoster() {
+  const R = ROSTER, ms = R.meals; if (!ms) return;
+  const rows = R.students.filter(s => !$('#onlyabs').checked || Object.keys(s.absent).length);
+  const all = R.students.length;
+  $('#att-sum').innerHTML = ms.map(m => { const a = R.students.filter(s => s.absent[m.meal_id] !== undefined).length; return `<span class="pill ${m.locked ? 'warn' : 'blue'}" title="${m.locked ? 'locked: plan approved' : ''}">${m.meal_type}: ${all - a} present, ${a} absent${m.locked ? ' (locked)' : ''}</span>`; }).join(' ');
+  $('#att-bulk').innerHTML = ms.map(m => `<span style="display:flex;gap:6px;align-items:center"><b style="text-transform:capitalize">${m.meal_type}</b>
+    <button class="btn ghost sm" data-bulk="reset" data-m="${m.meal_id}" ${m.locked ? 'disabled' : ''}>Everyone present</button>
+    <button class="btn ghost sm" data-bulk="random" data-m="${m.meal_id}" ${m.locked ? 'disabled' : ''}>Mark 8 random absent</button></span>`).join('');
+  $('#roster').innerHTML = `<tr><th>Student</th><th>Room</th>${ms.map(m => `<th style="text-transform:capitalize">${m.meal_type}</th>`).join('')}<th>Whole day</th></tr>` +
+    rows.map(s => `<tr><td>${esc(s.name)}</td><td class="mini">${esc(s.room)}</td>${ms.map(m => {
+      const ab = s.absent[m.meal_id] !== undefined;
+      return `<td><span class="sw ${m.locked ? 'locked' : ''}"><button class="${ab ? '' : 'on-p'}" data-s="${s.student_id}" data-m="${m.meal_id}" data-v="0">Present</button><button class="${ab ? 'on-a' : ''}" data-s="${s.student_id}" data-m="${m.meal_id}" data-v="1">Absent</button></span></td>`; }).join('')}
+      <td><span class="sw"><button data-s="${s.student_id}" data-m="day" data-v="0">All present</button><button data-s="${s.student_id}" data-m="day" data-v="1">All absent</button></span></td></tr>`).join('');
+}
+$('#roster').onclick = async e => {
+  const b = e.target.closest('button[data-s]'); if (!b) return;
+  const r = await post('/api/absence', {student_id: +b.dataset.s, meal_id: b.dataset.m === 'day' ? 'day' : +b.dataset.m, absent: b.dataset.v === '1'});
+  if (r.error) toast(r.error);
+  loadRoster();
+};
+$('#att-bulk').onclick = async e => {
+  const b = e.target.closest('button[data-bulk]'); if (!b) return;
+  const r = await post('/api/absence/bulk', {meal_id: +b.dataset.m, mode: b.dataset.bulk, count: 8});
+  if (r.error) toast(r.error); loadRoster();
+};
+
+/* ======================= NEW: concurrency / perf / db ======================= */
+$('#rundead').onclick = async () => {
+  $('#rundead').disabled = true; $('#deadstatus').textContent = 'running…';
+  const r = await get('/api/perf/deadlock'); $('#rundead').disabled = false;
+  $('#deadstatus').innerHTML = r.error ? esc(r.error) : `<span class="pill ${r.passed ? 'ok' : 'bad'}">${r.passed ? 'deadlock shown and fixed' : 'unexpected result'}</span>`;
+  $('#deadout').textContent = r.output || r.error || '';
+};
+let perfRan = false;
+function loadPerf() { if (perfRan) return; perfRan = true; runPerf(); }
+$('#reperf').onclick = () => runPerf();
+async function runPerf() {
+  $('#pf-index').innerHTML = '<span class="note">Running (a few seconds)…</span>';
+  get('/api/perf/index').then(d => {
+    if (d.error) { $('#pf-index').textContent = d.error; return; }
+    $('#pf-index').innerHTML = `<p class="note">${d.rows.toLocaleString()} attendance rows, ${d.reps} lookups per query, same data with and without the index.</p>` + d.queries.map(q => {
+      const mx = Math.max(q.no_index_ms, q.index_ms), sp = Math.round(q.no_index_ms / Math.max(q.index_ms, 0.01));
+      return `<div style="margin-bottom:14px"><b>${esc(q.name)}</b> <span class="pill ok">${sp.toLocaleString()}&times; faster</span>
+        <div class="cmp"><span>No index</span><div class="bar"><i style="width:100%;background:var(--c-fcfs)"></i></div><span class="mini">${q.no_index_ms.toFixed(1)} ms</span></div>
+        <div class="cmp"><span>With index</span><div class="bar"><i style="width:${Math.max(0.8, 100 * q.index_ms / mx)}%"></i></div><span class="mini">${q.index_ms.toFixed(2)} ms</span></div>
+        <div class="mini">plan before: ${esc(q.plan_no_index)}<br>plan after: ${esc(q.plan_index)}</div></div>`; }).join('');
+  });
+  get('/api/perf/tests').then(d => {
+    $('#pf-tests').innerHTML = d.tests.map(t => `<li><span class="pill ${t.passed ? 'ok' : t.passed === false ? 'bad' : 'warn'}">${t.passed ? 'pass' : t.passed === false ? 'fail' : 'n/a'}</span> <b>${esc(t.name)}</b><br><span class="mini">${esc(t.detail)}</span></li>`).join('');
+  });
+  get('/api/schedules').then(d => {
+    if (d.error) { $('#pf-sched').textContent = d.error; return; }
+    const mx = Math.max(...d.schedules.map(s => s.avg_waiting));
+    $('#pf-sched').innerHTML = d.schedules.map(s => `<div class="cmp"><span>${s.algorithm}</span><div class="bar"><i style="width:${100 * s.avg_waiting / mx}%;background:var(${colours[s.algorithm]})"></i></div><span class="mini">${s.avg_waiting.toFixed(1)} min</span></div>`).join('') +
+      '<p class="mini" style="margin:8px 0 0">Same lunch workload, same total time. SJF waits least; priority can starve low-priority dishes.</p>';
+  });
+}
+setInterval(async () => {
+  if (!$('#perf').classList.contains('on')) return;
+  const s = await get('/api/state'), el = s.stream.elapsed, c = s.counts || {}, n = (c.attendance || 0) + (c.prep || 0) + (c.waste || 0);
+  $('#pf-stream').innerHTML = el > 0 ? `<div class="big">${(n / el).toFixed(0)} <span class="mini">records / second</span></div><div class="mini">${n} records in ${el}s through generator &rarr; pipe &rarr; queue &rarr; 3 workers &rarr; SQLite (includes the per-event delay you set).</div>` : '<span class="note">Start a stream on the Live pipeline tab to see events per second.</span>';
+}, 1000);
+async function loadDb() {
+  const d = await get('/api/db'); if (d.error) return;
+  $('#db-kpis').innerHTML = [[d.tables.length, 'tables'], [d.indexes.length, 'indexes'], [d.triggers.length, 'trigger'], [d.foreign_keys ? 'ON' : 'OFF', 'foreign keys (this connection)'], [d.integrity, 'integrity check']]
+    .map(k => `<div class="card kpi"><div class="n">${k[0]}</div><div class="l">${k[1]}</div></div>`).join('');
+  $('#db-tables').innerHTML = `<table>${d.tables.map(t => `<tr><td>${esc(t.name)}</td><td class="num">${t.rows.toLocaleString()} rows</td></tr>`).join('')}</table>`;
+  $('#db-idx').innerHTML = `<table>${d.indexes.map(i => `<tr><td>${esc(i.name)}</td><td class="mini">on ${esc(i.tbl)}</td></tr>`).join('')}${d.triggers.map(i => `<tr><td>${esc(i.name)}</td><td class="mini">trigger on ${esc(i.tbl)}</td></tr>`).join('')}</table>`;
+  $('#db-plan').textContent = d.query + '\n=> ' + d.plan;
+}
+$('#fktest').onclick = async () => { const r = await post('/api/db/fk-test'); $('#fkout').innerHTML = `<span class="pill ${r.enforced ? 'ok' : 'bad'}">${r.enforced ? 'refused' : 'accepted'}</span> <span class="mini">${esc(r.message)}</span>`; };
+
+loadOverview(); loadRoster();
+if (location.hash && $('#' + location.hash.slice(1))) show(location.hash.slice(1));
+</script>
+</body></html>

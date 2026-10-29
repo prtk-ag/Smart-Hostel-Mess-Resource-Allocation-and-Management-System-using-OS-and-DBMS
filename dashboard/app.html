@@ -94,26 +94,143 @@ input[type=text],input[type=search],select{padding:7px 9px;border:1px solid var(
 button.btn.sm{padding:5px 11px;font-size:13px}
 button.btn.warn{background:var(--amber);border-color:var(--amber)}
 .up{font-size:12px;color:var(--muted)}
+
+/* ===== v3 look: mess-hall palette, dark banana-leaf sidebar ===== */
+:root{--bg:#F4F6F2;--card:#FFFFFF;--ink:#14231C;--muted:#5C6B63;--line:#DDE3DD;--blue:#1E6B52;--teal:#0F8A7E;--amber:#C98A00;--red:#C23B2E;--green:#2E8B57;
+  --turmeric:#E5A100;--leaf:#143D2F;--leaf2:#1C5240;--steel:#C9D1CD;--c-fcfs:#8A9A92;--c-sjf:#2B5B91;--c-prio:#0F8A7E}
+@media (prefers-color-scheme: dark){:root{--bg:#0E1713;--card:#15211B;--ink:#E7EEE9;--muted:#93A59B;--line:#25352D;--blue:#4DB58B;--teal:#3CCBB5;--amber:#E5A93A;--red:#EF6F60;--green:#5FC08A;--leaf:#0A1F18;--leaf2:#123428;--steel:#3B4A43;--c-fcfs:#7D8DA0;--c-sjf:#6EA3E0;--c-prio:#3CCBB5}}
+body{font:15px/1.5 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif}
+.shell{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+.side{background:var(--leaf);color:#DDE9E2;padding:18px 12px;position:sticky;top:0;height:100vh;overflow:auto;display:flex;flex-direction:column}
+.brand{display:flex;gap:10px;align-items:center;padding:4px 8px 16px}
+.brand b{display:block;font-size:20px;letter-spacing:.02em;color:#fff;line-height:1.1}
+.brand span{display:block;font-size:11.5px;color:#9DB8AB;line-height:1.25}
+#tabs{display:flex;flex-direction:column;gap:2px;flex:1}
+#tabs .grp{font-size:12px;color:#8FB3A2;margin:14px 10px 4px}
+#tabs button{background:none;border:0;border-left:3px solid transparent;color:#CFE0D7;padding:8px 10px;font:inherit;text-align:left;cursor:pointer;border-radius:0 8px 8px 0;display:flex;justify-content:space-between;align-items:center}
+#tabs button:hover{background:var(--leaf2)}
+#tabs button[aria-selected=true]{background:var(--leaf2);border-left-color:var(--turmeric);color:#fff;font-weight:600}
+#tabs button:focus-visible{outline:2px solid var(--turmeric);outline-offset:-2px}
+.tag{font-style:normal;font-size:11px;padding:1px 7px;border-radius:999px;font-weight:600}
+.t-os{background:#2B5B91;color:#fff}.t-db{background:#E5A100;color:#2a1d00}.t-ai{background:#7B4FBF;color:#fff}
+.foot{font-size:11.5px;color:#7FA08F;padding:12px 10px 0}
+.content{min-width:0}
+.topbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:18px 28px 0;max-width:1240px;margin:0 auto}
+.topbar h1{font-size:24px;margin:0;letter-spacing:-.01em}
+.chips{display:flex;gap:8px}.chip{font-size:12.5px;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:3px 11px;color:var(--muted)}
+main{max-width:1240px;padding:16px 28px 48px}
+h2{text-transform:none;letter-spacing:0;font-size:15px;color:var(--ink);font-weight:650}
+.card{border-radius:14px;box-shadow:0 1px 0 rgba(20,35,28,.04)}
+button.btn{background:var(--blue);border-color:var(--blue)}button.btn.ghost{color:var(--blue)}
+button.btn.big{padding:12px 22px;font-size:16px;font-weight:650;border-radius:12px}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--turmeric);outline-offset:2px}
+@media (max-width:860px){.shell{grid-template-columns:1fr}.side{position:static;height:auto}#tabs{flex-direction:row;flex-wrap:wrap}#tabs .grp{display:none}#tabs button{border-left:0;border-bottom:3px solid transparent;border-radius:6px 6px 0 0}#tabs button[aria-selected=true]{border-bottom-color:var(--turmeric)}.topbar,main{padding-left:14px;padding-right:14px}}
+
+/* home */
+.hero{display:grid;grid-template-columns:minmax(260px,1fr) minmax(320px,1.15fr);gap:28px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px 28px;margin-bottom:16px}
+.hero h2{font-size:32px;line-height:1.12;letter-spacing:-.02em;margin:0 0 10px;font-weight:750}
+.hero p{margin:0 0 16px;color:var(--muted);max-width:46ch}
+.hero .cta{display:flex;gap:10px;flex-wrap:wrap}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-bottom:16px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card)}
+.flow div{padding:14px 16px;border-right:1px solid var(--line)}.flow div:last-child{border:0}
+.flow b{display:block;font-size:14px}.flow span{font-size:13px;color:var(--muted)}
+.flow .n{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--turmeric);color:#2a1d00;font-weight:700;font-size:13px;margin-bottom:6px}
+.proof{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.map td a{color:var(--blue);cursor:pointer;text-decoration:underline}
+@media (max-width:760px){.hero{grid-template-columns:1fr}.flow{grid-template-columns:1fr 1fr}.flow div{border-bottom:1px solid var(--line)}}
+/* demo console */
+.demo{border:1px solid var(--line);border-radius:14px;background:var(--card);padding:16px 18px;margin-bottom:16px}
+.dstep{display:grid;grid-template-columns:26px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);opacity:.45;transition:opacity .3s}
+.dstep:last-child{border:0}.dstep.run,.dstep.done{opacity:1}
+.dstep .ic{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:12px;font-weight:700}
+.dstep.run .ic{border-color:var(--turmeric);animation:pulse 1s infinite}.dstep.done .ic{background:var(--green);border-color:var(--green);color:#fff}
+.dstep b{font-size:14.5px}.dstep span{display:block;font-size:13px;color:var(--muted)}
+/* student portal */
+.who{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:14px}
+.who select{min-width:240px;font-size:15px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:14px}
+.tile{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:18px;transition:border-color .2s,background .2s}
+.tile.eat{border-color:color-mix(in srgb,var(--green) 55%,transparent)}
+.tile.skip{border-color:var(--red);background:color-mix(in srgb,var(--red) 7%,var(--card))}
+.tile h3{margin:0;font-size:20px;text-transform:capitalize}.tile .t{color:var(--muted);font-size:13px}
+.tile .dish{font-size:16px;margin:8px 0 14px;font-weight:600}
+.big-sw{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.big-sw button{border:0;background:none;padding:13px 6px;font:inherit;font-weight:600;color:var(--muted);cursor:pointer}
+.big-sw button.on-e{background:var(--green);color:#fff}.big-sw button.on-s{background:var(--red);color:#fff}
+.big-sw.locked{opacity:.5;pointer-events:none}
+.tile .msg{font-size:13px;color:var(--muted);margin-top:10px;min-height:1.4em}
+.impact{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+/* tray */
+.tray text{font-family:inherit}
 </style></head>
 <body>
-<header>
-  <h1>SHRM &middot; Smart Hostel Mess Resource Manager</h1>
-  <div class="sub">Team MiraiSentinals &middot; Team ID OSDBMS-V-2026-T051 &middot; runs the real C++ programs and a SQLite database</div>
-  <nav role="tablist" id="tabs">
-    <button role="tab" aria-selected="true" data-tab="overview">Overview</button>
-    <button role="tab" aria-selected="false" data-tab="attend">Attendance</button>
-    <button role="tab" aria-selected="false" data-tab="agent">AI planning agent</button>
-    <button role="tab" aria-selected="false" data-tab="multi">Multi-agent</button>
-    <button role="tab" aria-selected="false" data-tab="live">Live pipeline</button>
-    <button role="tab" aria-selected="false" data-tab="sched">Scheduling</button>
-    <button role="tab" aria-selected="false" data-tab="conc">Concurrency</button>
-    <button role="tab" aria-selected="false" data-tab="perf">Performance</button>
-    <button role="tab" aria-selected="false" data-tab="dbv">Database</button>
-  </nav>
-</header>
+<div class="shell">
+<aside class="side">
+  <div class="brand"><svg viewBox="0 0 40 40" width="34" height="34" aria-hidden="true"><rect x="2" y="9" width="36" height="24" rx="8" fill="#E5A100"/><circle cx="12" cy="21" r="5.2" fill="#143D2F"/><circle cx="26" cy="17" r="4" fill="#143D2F"/><circle cx="28" cy="27" r="3.4" fill="#143D2F"/></svg>
+    <div><b>SHRM</b><span>Smart Hostel Mess Resource Manager</span></div></div>
+  <div id="tabs">
+    <div class="grp">Mess</div>
+    <button role="tab" aria-selected="true" data-tab="home">Home</button>
+    <button role="tab" aria-selected="false" data-tab="student">Student portal <i class="tag t-db">DBMS</i></button>
+    <button role="tab" aria-selected="false" data-tab="overview">Kitchen today</button>
+    <button role="tab" aria-selected="false" data-tab="attend">Attendance register</button>
+    <div class="grp">AI agents</div>
+    <button role="tab" aria-selected="false" data-tab="agent">Planning agent <i class="tag t-ai">AI</i></button>
+    <button role="tab" aria-selected="false" data-tab="multi">Multi-agent <i class="tag t-ai">AI</i></button>
+    <div class="grp">Operating systems</div>
+    <button role="tab" aria-selected="false" data-tab="live">Live pipeline <i class="tag t-os">IPC</i></button>
+    <button role="tab" aria-selected="false" data-tab="sched">Scheduling <i class="tag t-os">CPU</i></button>
+    <button role="tab" aria-selected="false" data-tab="conc">Race and deadlock <i class="tag t-os">threads</i></button>
+    <div class="grp">Database</div>
+    <button role="tab" aria-selected="false" data-tab="perf">Performance <i class="tag t-db">index</i></button>
+    <button role="tab" aria-selected="false" data-tab="dbv">Schema and checks <i class="tag t-db">ACID</i></button>
+  </div>
+  <div class="foot">Team MiraiSentinals<br>OSDBMS-V-2026-T051</div>
+</aside>
+<div class="content">
+<div class="topbar"><div><h1 id="pg-title">Home</h1><div class="sub" id="pg-sub"></div></div>
+  <div class="chips"><span class="chip"><span class="dot live"></span>server running</span><span class="chip" id="chip-date"></span></div></div>
 <main>
 
-<section class="panel on" id="overview">
+<section class="panel on" id="home">
+  <div class="hero">
+    <div>
+      <h2>Cook for the students who are actually eating.</h2>
+      <p>Every student is counted as present. Anyone who skips a meal taps "I'm not eating". Planning agents turn those answers into a cooking plan, the kitchen approves it, and the database keeps stock exact.</p>
+      <div class="cta"><button class="btn big" id="rundemo">Run the guided demo</button><button class="btn ghost big" id="gostudent">Open the student portal</button></div>
+    </div>
+    <div id="tray"></div>
+  </div>
+  <div class="demo" id="demo" hidden><h2>Guided demo</h2><div id="demosteps"></div><div id="demoresult"></div></div>
+  <div class="flow">
+    <div><span class="n">1</span><b>Students opt out</b><span>Present by default. Absent per meal is one database row.</span></div>
+    <div><span class="n">2</span><b>Agents plan</b><span>Forecast, waste review, stock check and anomaly scan.</span></div>
+    <div><span class="n">3</span><b>Kitchen approves</b><span>Stock deducted in one all-or-nothing transaction.</span></div>
+    <div><span class="n">4</span><b>Service teaches</b><span>Real diner count feeds the next forecast.</span></div>
+  </div>
+  <div class="proof" id="home-proof"></div>
+  <div class="card"><h2>Where each course concept lives in this project</h2>
+    <table class="map"><tr><th>Concept</th><th>What it shows</th><th>See it</th></tr>
+      <tr><td><span class="tag t-os">OS</span> Threads, mutex, condition variable</td><td>Producer-consumer queue feeding worker threads, exactly-once delivery</td><td><a data-go="live">Live pipeline</a></td></tr>
+      <tr><td><span class="tag t-os">OS</span> IPC</td><td>Event generator process sends events through a pipe to the server process</td><td><a data-go="live">Live pipeline</a></td></tr>
+      <tr><td><span class="tag t-os">OS</span> CPU scheduling</td><td>FCFS, SJF and Priority on the same lunch workload</td><td><a data-go="sched">Scheduling</a></td></tr>
+      <tr><td><span class="tag t-os">OS</span> Race condition, deadlock</td><td>Lost updates reproduced and fixed; two-lock deadlock detected and fixed</td><td><a data-go="conc">Race and deadlock</a></td></tr>
+      <tr><td><span class="tag t-db">DB</span> Transactions, ACID</td><td>Approving a plan deducts stock and logs prep, or changes nothing</td><td><a data-go="agent">Planning agent</a></td></tr>
+      <tr><td><span class="tag t-db">DB</span> Indexing, constraints, trigger</td><td>Index speed-up, UNIQUE and foreign keys, low-stock trigger</td><td><a data-go="perf">Performance</a>, <a data-go="dbv">Schema</a></td></tr>
+      <tr><td><span class="tag t-ai">AI</span> Agents</td><td>Five agents in separate threads passing messages</td><td><a data-go="multi">Multi-agent</a></td></tr>
+    </table></div>
+</section>
+
+<section class="panel" id="student">
+  <p class="note">This is what a student sees. Everyone is counted as eating. Tell the kitchen when you will skip a meal so food is not cooked for you.</p>
+  <div class="who"><label style="display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)">Signed in as<select id="stu-pick"></select></label>
+    <button class="btn ghost" id="stu-away">I'm away today</button><button class="btn ghost" id="stu-back">I'm eating everything today</button></div>
+  <div id="stu-banner"></div>
+  <div class="tiles" id="stu-tiles"></div>
+  <div class="impact" id="stu-impact"></div>
+</section>
+
+<section class="panel" id="overview">
   <div class="hero"><div><b id="ov-date"></b> <span class="mini" id="ov-sub"></span></div>
     <div><button class="btn ghost sm" id="resetday">Reset today (demo)</button></div></div>
   <div class="row kpis" id="ov-kpis"></div>
@@ -235,6 +352,7 @@ button.btn.warn{background:var(--amber);border-color:var(--amber)}
 </section>
 
 </main>
+</div></div>
 <div class="toast" id="toast"></div>
 <script>
 const $ = s => document.querySelector(s);
@@ -244,12 +362,19 @@ async function get(u) { return (await fetch(u)).json(); }
 function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 2800); }
 const cap = s => s[0].toUpperCase() + s.slice(1);
 
+const TITLES = {home:['Home','Project overview and guided demo'], student:['Student portal','What a student sees: opt out of a meal in one tap'],
+  overview:['Kitchen today','Forecasts, stock and alerts for the three meals'], attend:['Attendance register','The warden view of who is absent'],
+  agent:['Planning agent','Forecast, plan, approve, learn'], multi:['Multi-agent system','Five agents in separate threads, passing messages'],
+  live:['Live pipeline','Event generator, pipe, queue, worker threads, SQLite'], sched:['Scheduling','FCFS, SJF and Priority compared'],
+  conc:['Race and deadlock','Two classic concurrency bugs, reproduced and fixed'], perf:['Performance','Measured results from the real programs'],
+  dbv:['Schema and checks','Tables, indexes, trigger and constraints']};
 /* ---------- tabs ---------- */
-const loaders = {overview: loadOverview, attend: loadRoster, agent: loadOverview, sched: () => !schedLoaded && loadSched(), perf: loadPerf, dbv: loadDb};
+const loaders = {home: loadHome, student: loadStudent, overview: loadOverview, attend: loadRoster, agent: loadOverview, sched: () => !schedLoaded && loadSched(), perf: loadPerf, dbv: loadDb};
 function show(tab) {
   document.querySelectorAll('#tabs button').forEach(x => x.setAttribute('aria-selected', x.dataset.tab === tab));
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === tab));
   (loaders[tab] || (() => 0))(); history.replaceState(null, '', '#' + tab);
+  const T = TITLES[tab] || [tab, '']; $('#pg-title').textContent = T[0]; $('#pg-sub').textContent = T[1];
 }
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => show(b.dataset.tab));
 
@@ -562,7 +687,116 @@ $('#ma-out').onclick = async e => {
   if (!r.error) { const rr = await post('/api/multiagent/run'); if (!rr.error) renderMA(rr); else $('#ma-out').innerHTML = `<p class="note">${esc(rr.error)}</p>`; }
 };
 
-loadOverview(); loadRoster();
-if (location.hash && $('#' + location.hash.slice(1))) show(location.hash.slice(1));
+/* ======================= v3: home, student portal, guided demo ======================= */
+const PLATE_KG = 0.25;   // rough ingredient weight per plate, only used for the "food saved" estimate
+const MEAL_TIME = {breakfast:'7:30 to 9:30', lunch:'12:30 to 14:30', dinner:'19:30 to 21:30'};
+const STATUS_COL = {Planned:'--blue', Approved:'--amber', Closed:'--green'};
+async function loadHome() { await loadOverview(); renderHome(); }
+function renderHome() {
+  if (!OV) return;
+  $('#chip-date').textContent = OV.weekday + ' ' + OV.date;
+  const W = 560, H = 250;
+  const bowls = OV.meals.map((m, i) => {
+    const cx = 100 + i * 180, cy = 120, r = 62, f = m.forecast, e = Math.max(m.eligible, 1);
+    const frac = Math.min(1, f.expected / Math.max(OV.total, 1)), circ = 2 * Math.PI * r;
+    const [pl] = pillFor(m), col = css(STATUS_COL[pl] || '--blue');
+    const plates = m.plan ? m.plan.plates : f.plates;
+    return `<g><circle cx="${cx}" cy="${cy}" r="${r + 7}" fill="${css('--card')}" stroke="${css('--steel')}" stroke-width="2"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${css('--line')}" stroke-width="12"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${col}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${(circ * frac).toFixed(1)} ${circ.toFixed(1)}" transform="rotate(-90 ${cx} ${cy})" style="transition:stroke-dasharray .6s"/>
+      <text x="${cx}" y="${cy + 6}" text-anchor="middle" font-size="32" font-weight="750">${plates}</text>
+      <text x="${cx}" y="${cy + 24}" text-anchor="middle" font-size="12" class="mut">plates</text>
+      <text x="${cx}" y="${cy - 26}" text-anchor="middle" font-size="13" font-weight="650" style="text-transform:capitalize">${m.meal_type}</text>
+      <text x="${cx}" y="${cy + r + 30}" text-anchor="middle" font-size="12.5" class="mut">${m.declared_absent} opted out, ${pl.toLowerCase()}</text></g>`;
+  }).join('');
+  $('#tray').innerHTML = `<svg class="tray" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Today's three meals as a thali tray: plates planned and opt-outs">
+    <rect x="6" y="14" width="${W - 12}" height="${H - 30}" rx="40" fill="${css('--bg')}" stroke="${css('--steel')}" stroke-width="3"/>${bowls}</svg>`;
+  const saved = OV.meals.reduce((a, m) => a + (m.naive_plates - (m.plan ? m.plan.plates : m.forecast.plates)), 0);
+  const absent = OV.meals.reduce((a, m) => a + m.declared_absent, 0);
+  const b = OV.backtest;
+  $('#home-proof').innerHTML = [
+    [OV.total, 'students in the hostel'], [absent, 'meal opt-outs today'], [saved, 'plates not cooked vs cooking for everyone'],
+    [(saved * PLATE_KG).toFixed(1) + ' kg', 'food saved today (estimate)'], [b ? Math.round(100 * (1 - b.agent_wasted_plates / Math.max(1, b.naive_wasted_plates))) + '%' : '-', 'less waste in the 7-day replay']
+  ].map(k => `<div class="card kpi"><div class="n">${k[0]}</div><div class="l">${k[1]}</div></div>`).join('');
+}
+$('#gostudent').onclick = () => show('student');
+document.addEventListener('click', e => { const a = e.target.closest('[data-go]'); if (a) show(a.dataset.go); });
+
+/* ----- student portal ----- */
+let STU = null, stuId = null;
+async function loadStudent() {
+  STU = await get('/api/roster?q='); if (!STU.students) return;
+  const pick = $('#stu-pick');
+  if (!pick.options.length) {
+    pick.innerHTML = STU.students.map(s => `<option value="${s.student_id}">${esc(s.name)} (${esc(s.room)})</option>`).join('');
+    const me = STU.students.find(s => s.name.startsWith('Prateek')); stuId = me ? me.student_id : STU.students[0].student_id; pick.value = stuId;
+  }
+  if (!OV) OV = await get('/api/overview');
+  renderStudent();
+}
+$('#stu-pick').onchange = e => { stuId = +e.target.value; renderStudent(); };
+function renderStudent() {
+  const s = STU.students.find(x => x.student_id === stuId); if (!s) return;
+  const dishes = OV ? Object.fromEntries(OV.meals.map(m => [m.meal_type, m.dish])) : {};
+  $('#stu-tiles').innerHTML = STU.meals.map(m => {
+    const skip = s.absent[m.meal_id] !== undefined;
+    return `<div class="tile ${skip ? 'skip' : 'eat'}"><h3>${m.meal_type}</h3><div class="t">${MEAL_TIME[m.meal_type]}${m.locked ? ' &middot; kitchen has locked this meal' : ''}</div>
+      <div class="dish">${esc(dishes[m.meal_type] || '')}</div>
+      <div class="big-sw ${m.locked ? 'locked' : ''}"><button class="${skip ? '' : 'on-e'}" data-sm="${m.meal_id}" data-v="0">I'm eating</button><button class="${skip ? 'on-s' : ''}" data-sm="${m.meal_id}" data-v="1">I'm not eating</button></div>
+      <div class="msg">${skip ? 'Thanks. The kitchen will cook one plate less for this meal.' : (m.locked ? 'Too late to change: the plan is approved.' : 'Counted in. Tap "I\'m not eating" if you will skip it.')}</div></div>`;
+  }).join('');
+  const nl = STU.meals.filter(m => m.locked).length;
+  $('#stu-banner').innerHTML = nl ? `<div class="card" style="margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span>${nl} of 3 meals are locked because the kitchen already approved their plans.</span><button class="btn sm" id="fresh">Start a fresh day</button></div>` : '';
+  const n = Object.keys(s.absent).length;
+  $('#stu-impact').innerHTML = [[n, 'meals you skipped today'], [n + ' plate' + (n === 1 ? '' : 's'), 'not cooked because of you'], [(n * PLATE_KG).toFixed(2) + ' kg', 'food not wasted (estimate)']]
+    .map(k => `<div class="card kpi"><div class="n">${k[0]}</div><div class="l">${k[1]}</div></div>`).join('');
+}
+$('#stu-tiles').onclick = async e => {
+  const b = e.target.closest('button[data-sm]'); if (!b) return;
+  const r = await post('/api/absence', {student_id: stuId, meal_id: +b.dataset.sm, absent: b.dataset.v === '1'});
+  if (r.error) toast(r.error); await loadStudent(); OV = await get('/api/overview');
+};
+document.addEventListener('click', async e => { if (e.target.id === 'fresh' || e.target.id === 'demo-fresh') { await post('/api/reset'); OV = await get('/api/overview'); toast('Fresh day: everyone present, nothing approved'); loadStudent(); renderHome(); } });
+$('#stu-away').onclick = async () => { const r = await post('/api/absence', {student_id: stuId, meal_id: 'day', absent: true, reason: 'away'}); if (r.error) toast(r.error); loadStudent(); };
+$('#stu-back').onclick = async () => { const r = await post('/api/absence', {student_id: stuId, meal_id: 'day', absent: false}); if (r.error) toast(r.error); loadStudent(); };
+
+/* ----- guided demo ----- */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+$('#rundemo').onclick = async () => {
+  const box = $('#demo'), stepsEl = $('#demosteps'), res = $('#demoresult');
+  box.hidden = false; res.innerHTML = ''; $('#rundemo').disabled = true; box.scrollIntoView({behavior: 'smooth', block: 'start'});
+  const names = ['Start a fresh day', 'Students opt out of meals', 'Agents forecast and review', 'Kitchen approves the plans', 'Serve the meals and learn', 'Result'];
+  stepsEl.innerHTML = names.map((n, i) => `<div class="dstep" id="ds${i}"><div class="ic">${i + 1}</div><div><b>${n}</b><span id="dd${i}">waiting</span></div></div>`).join('');
+  const run = async (i, text, fn) => { $('#ds' + i).className = 'dstep run'; $('#dd' + i).textContent = text; await sleep(700); const out = await fn(); $('#ds' + i).className = 'dstep done'; $('#ds' + i).querySelector('.ic').textContent = '\u2713'; if (out) $('#dd' + i).textContent = out; await sleep(500); };
+  try {
+    await run(0, 'Clearing absences, plans and stock changes…', async () => { await post('/api/reset'); return 'Stock restored, no plans, everyone present.'; });
+    const ov0 = await get('/api/overview'); const m = ov0.meals;
+    await run(1, 'Students tap "I\'m not eating"…', async () => {
+      const cnt = {breakfast: 18, lunch: 9, dinner: 12};
+      for (const x of m) await post('/api/absence/bulk', {meal_id: x.meal_id, mode: 'random', count: cnt[x.meal_type]});
+      return `Opt-outs saved: breakfast ${cnt.breakfast}, lunch ${cnt.lunch}, dinner ${cnt.dinner}. Each is one row in the absences table.`; });
+    let ma;
+    await run(2, 'Forecaster, Waste analyst, Procurement and Anomaly are exchanging messages…', async () => {
+      ma = await post('/api/multiagent/run'); if (ma.error) throw new Error(ma.error);
+      window.MA = ma; return `${ma.messages.length} messages in ${ma.duration_ms} ms. Plates: ` + ma.meals.map(x => `${x.meal_type} ${x.plates}`).join(', ') + (ma.orders.length ? `. ${ma.orders.length} reorder(s) drafted.` : '.'); });
+    await run(3, 'Approving each plan: stock deducted in one transaction…', async () => {
+      for (const x of ma.meals) { const r = await post('/api/agent/approve', {meal_id: x.meal_id, plates: x.plates}); if (r.error) throw new Error(r.error); }
+      return 'All three plans approved. Attendance is now locked for these meals.'; });
+    await run(4, 'Closing each meal with the real number of diners…', async () => {
+      for (const x of ma.meals) { const r = await post('/api/meal/close', {meal_id: x.meal_id, simulate: true}); if (r.error) throw new Error(r.error); }
+      return 'Meals closed. The real counts are now part of the agents\' history.'; });
+    await run(5, 'Summing up…', async () => {
+      OV = await get('/api/overview'); const ms = OV.meals;
+      const cooked = ms.reduce((a, x) => a + x.plan.plates, 0), old = ms.reduce((a, x) => a + x.naive_plates, 0), waste = ms.reduce((a, x) => a + x.plan.waste_plates, 0);
+      res.innerHTML = `<div class="proof" style="margin-top:12px">${[[old - cooked, 'plates not cooked vs the old habit'], [((old - cooked) * PLATE_KG).toFixed(1) + ' kg', 'food saved (estimate)'], [waste, 'plates left over after service'], [OV.alerts.length, 'low-stock alerts raised by the trigger']]
+        .map(k => `<div class="card kpi"><div class="n">${k[0]}</div><div class="l">${k[1]}</div></div>`).join('')}</div>
+        <p class="note" style="margin-top:12px">Look closer: <a data-go="multi" style="color:var(--blue);cursor:pointer;text-decoration:underline">agent messages</a>, <a data-go="overview" style="color:var(--blue);cursor:pointer;text-decoration:underline">kitchen and stock</a>, <a data-go="dbv" style="color:var(--blue);cursor:pointer;text-decoration:underline">database checks</a>. </p><button class="btn ghost sm" id="demo-fresh">Start a fresh day</button>`;
+      renderHome(); return 'Done.'; });
+  } catch (err) { toast('Demo stopped: ' + err.message); }
+  $('#rundemo').disabled = false;
+};
+
+loadOverview().then(renderHome); loadRoster();
+show(location.hash && $('#' + location.hash.slice(1)) ? location.hash.slice(1) : 'home');
 </script>
 </body></html>

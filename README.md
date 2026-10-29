@@ -9,7 +9,11 @@ See `docs/` (or the project proposal PDF) for the full architecture writeup.
 
 ## SHRM Control Center (the demo platform)
 
-`python3 dashboard/app.py` (set `SHRM_PORT=8090` if 8080 is taken) then open the printed address. Eight tabs:
+`python3 dashboard/app.py` (set `SHRM_PORT=8090` if 8080 is taken) then open the printed address.
+Start on **Home**: a live thali-tray view of today's three meals, a **Run the guided demo** button that plays the whole flow
+(fresh day, students opt out, agents plan, kitchen approves, service, results) in about 15 seconds, and a table that maps every
+course concept to the tab that shows it. The **Student portal** is the student's view: pick a student and tap "I'm not eating" per meal.
+Tabs:
 Overview, **Attendance** (everyone present by default; mark yourself absent per meal or for the day,
 stored in the `absences` table with a UNIQUE(student, meal) constraint, locked once a meal's plan is
 approved), **AI planning agent**, Live pipeline, Scheduling, Concurrency (race + deadlock), Performance

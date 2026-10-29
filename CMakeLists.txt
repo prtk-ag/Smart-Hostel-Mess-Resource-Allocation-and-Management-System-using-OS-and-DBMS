@@ -96,3 +96,30 @@ target_link_libraries(shrm_race_demo PRIVATE
     ${SQLITE3_LIBRARIES}
     Threads::Threads
 )
+
+# Phase 6: scheduler -- Job model, shared metrics, FCFS. Pure C++ with no
+# DB or threading dependency, so it builds and tests on its own. Phase 7
+# adds SJF and Priority to the same library.
+add_library(shrm_scheduler STATIC
+    server/scheduler/scheduler.cpp
+)
+
+target_include_directories(shrm_scheduler PUBLIC
+    server/scheduler
+)
+
+add_executable(shrm_scheduler_demo
+    server/scheduler_demo.cpp
+)
+
+target_link_libraries(shrm_scheduler_demo PRIVATE
+    shrm_scheduler
+)
+
+add_executable(shrm_scheduler_test
+    tests/test_scheduler.cpp
+)
+
+target_link_libraries(shrm_scheduler_test PRIVATE
+    shrm_scheduler
+)

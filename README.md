@@ -7,7 +7,7 @@ four separate syllabus-topic demos bolted together.
 
 See `docs/` (or the project proposal PDF) for the full architecture writeup.
 
-## Current status: Phase 4/5 — real worker threads on the queue, race condition reproduced and fixed
+## Current status: Phase 6 — FCFS scheduler (on top of the Phase 4/5 concurrency work)
 
 What's implemented right now:
 - Normalized schema (`server/db/schema.sql`): students, inventory, meals, menu,
@@ -54,8 +54,22 @@ What's implemented right now:
   real file-level locking serialize the transactions correctly, which is what
   the race demo above relies on.
 
-Not implemented yet (see roadmap below): the scheduler, IPC, the event
-generator process, and the deadlock demo.
+- **New in Phase 6:** `server/scheduler/` — a `Job` model (arrival time, burst
+  time, priority), a `ScheduleResult` type, and `scheduleFCFS()`: first-come,
+  first-served, non-preemptive, ties broken by job id, with the station
+  correctly sitting idle when the next job hasn't arrived yet. Metrics
+  (waiting, turnaround, response time, makespan, idle time) are computed in
+  one shared `buildResult()` so every algorithm added later is measured by
+  the same definitions. `shrm_scheduler_demo` runs it on a six-dish lunch
+  prep workload and prints a metrics table plus a Gantt chart.
+  `tests/test_scheduler.cpp` (`shrm_scheduler_test`) checks FCFS against
+  answers worked out by hand (the textbook 0/24/27 example, staggered
+  arrivals, idle gaps), plus invariants over 500 random workloads — and was
+  confirmed able to fail: deliberately breaking FCFS made 6 checks fail and
+  flagged 451 of the 500 random workloads.
+
+Not implemented yet (see roadmap below): SJF and Priority scheduling, IPC,
+the event generator process, and the deadlock demo.
 
 ## Building
 
@@ -74,6 +88,8 @@ cd ..                       # binaries load relative paths (schema.sql), so
 ./build/shrm_queue_test       # optional args: [producers] [events/producer] [consumers]
 ./build/shrm_pipeline_demo    # queue + worker threads + DB, wired together
 ./build/shrm_race_demo        # optional args: [threads] [iterations/thread]
+./build/shrm_scheduler_demo   # FCFS metrics table + Gantt chart (no database needed)
+./build/shrm_scheduler_test   # FCFS checked against hand-computed answers
 ```
 
 `shrm_server` creates `shrm.db` and prints inventory/alert state as it runs
@@ -100,6 +116,10 @@ shrm/
 │   │   ├── db_manager.cpp    # SQLite wrapper: transactional logPrep() +
 │   │   │                     # deliberately unsafe logPrepUnsafe() for the race demo
 │   │   └── seed_data.cpp     # sample students/inventory/menu/meals/attendance
+│   ├── scheduler/
+│   │   ├── job.h             # Job / JobResult / ScheduleResult
+│   │   └── scheduler.h/.cpp  # scheduleFCFS(), shared buildResult(), Gantt printer
+│   ├── scheduler_demo.cpp    # Phase 6 demo (shrm_scheduler_demo)
 │   ├── concurrency/
 │   │   ├── event_queue.h/.cpp  # Event struct + thread-safe EventQueue
 │   │   └── workers.h/.cpp      # runWorker() -- the real queue consumer
@@ -108,7 +128,8 @@ shrm/
 │       └── seed_data.h
 ├── tests/
 │   ├── test_event_queue.cpp     # Phase 3 correctness check (shrm_queue_test)
-│   └── test_race_condition.cpp  # Phase 4/5 race demo (shrm_race_demo)
+│   ├── test_race_condition.cpp  # Phase 4/5 race demo (shrm_race_demo)
+│   └── test_scheduler.cpp       # Phase 6 FCFS tests (shrm_scheduler_test)
 ├── CMakeLists.txt
 └── README.md
 ```
@@ -129,7 +150,7 @@ meaningful commit — update the repo at the end of each one.
 | 3 | ✅ Producer-consumer threading (part 1) | Phase 3 commit. Thread-safe `EventQueue`, verified with multi-producer/multi-consumer tests and ThreadSanitizer. |
 | 4 | ✅ Producer-consumer threading (part 2) | This commit. Real worker threads (`runWorker`) draining the queue into the DB via `DbManager`; `shrm_pipeline_demo` proves the full pipeline end to end. |
 | 5 | ✅ Fix the race condition | This commit (bundled with #4 — they're the same experiment). `shrm_race_demo` reproduces the lost-update race with `logPrepUnsafe` (180/200 deductions lost at 10×20 threads), then shows `logPrep`'s transaction losing zero, every run. Also fixed a real bug hit along the way: worker threads need one SQLite connection *each*, not a shared one — see the README section above. |
-| 6 | Scheduler (part 1) | `Job` struct (arrival time, burst estimate, priority) + FCFS implementation with waiting/turnaround time metrics printed to console. |
+| 6 | ✅ Scheduler (part 1) | This commit. `Job` model + FCFS with waiting/turnaround/response metrics, Gantt chart output, and tests checked against hand-computed answers. |
 | 7 | Scheduler (part 2) | Add SJF and Priority scheduling, same metrics, and a small comparison table/printout across all three. |
 | 8 | IPC — event generator process | Split `sensor_simulator/` into its own binary, generating synthetic attendance/waste/stock events and writing them to a named pipe (`mkfifo`). Main server reads from the pipe instead of hardcoded demo calls. |
 | 9 | Deadlock demo | Construct the two-thread, two-lock deadlock on purpose (`tests/test_deadlock.cpp`), show it hang, then fix with consistent lock ordering. |
@@ -148,8 +169,8 @@ piece, not partial/broken code.
 | 2 | Seed data script | Prateek Agarwal | ✅ Done |
 | 3 | Thread-safe producer-consumer queue | Anant Agarwal | ✅ Done |
 | 4/5 | Real worker threads + race condition (reproduce & fix) | Anant Agarwal (DB/transaction side: Prateek Agarwal) | ✅ Done |
-| 6 | Scheduler part 1 — FCFS | Arjun Singh Poonia | ⬜ Next |
-| 7 | Scheduler part 2 — SJF, Priority, comparison | Arjun Singh Poonia | ⬜ |
+| 6 | Scheduler part 1 — FCFS | Arjun Singh Poonia | ✅ Done |
+| 7 | Scheduler part 2 — SJF, Priority, comparison | Arjun Singh Poonia | ⬜ Next |
 | 8 | IPC — event generator process, named pipe | Arjun Singh Poonia | ⬜ |
 | 9 | Deadlock demo (construct → fix) | Anant Agarwal | ⬜ |
 | 10 | Indexing experiment at scale (~5,000 rows) | Prateek Agarwal | ⬜ |

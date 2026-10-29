@@ -103,6 +103,7 @@ button.btn.warn{background:var(--amber);border-color:var(--amber)}
     <button role="tab" aria-selected="true" data-tab="overview">Overview</button>
     <button role="tab" aria-selected="false" data-tab="attend">Attendance</button>
     <button role="tab" aria-selected="false" data-tab="agent">AI planning agent</button>
+    <button role="tab" aria-selected="false" data-tab="multi">Multi-agent</button>
     <button role="tab" aria-selected="false" data-tab="live">Live pipeline</button>
     <button role="tab" aria-selected="false" data-tab="sched">Scheduling</button>
     <button role="tab" aria-selected="false" data-tab="conc">Concurrency</button>
@@ -142,6 +143,24 @@ button.btn.warn{background:var(--amber);border-color:var(--amber)}
   <div class="row meals" id="ag-meals"></div>
   <div class="card"><h2>How good is it? &middot; replay of the last 7 days</h2><div id="ag-back"></div>
     <p class="mini" style="margin:8px 0 0">Each past meal is forecast using only data from before that day. The "old habit" is cooking for everyone who did not opt out. Past data is synthetic demo data, so treat the percentages as a demonstration of the method.</p></div>
+</section>
+
+<section class="panel" id="multi">
+  <p class="note">Five agents, each in <b>its own thread with its own inbox queue</b> (the same producer-consumer pattern as the C++ event queue), talking only by messages. Every message is saved in the <code>agent_messages</code> table. Nothing is applied automatically: you approve each meal.</p>
+  <div class="card" style="margin-bottom:12px"><svg viewBox="0 0 900 190" width="100%" role="img" aria-label="Agent message flow">
+    <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs>
+    <g style="color:var(--muted)" stroke="currentColor" stroke-width="1.5" fill="none" marker-end="url(#ar)">
+      <path d="M190 85 L300 50"/><path d="M190 105 L300 140"/><path d="M365 78 L365 112"/><path d="M415 112 L415 78" stroke-dasharray="4 3"/><path d="M480 49 L600 49"/></g>
+    <g font-size="13" text-anchor="middle">
+      <rect x="20" y="65" width="170" height="60" rx="10" fill="var(--blue)"/><text x="105" y="92" style="fill:#fff" font-weight="600">Coordinator</text><text x="105" y="110" style="fill:#fff" font-size="11">tasks, resolves, final plan</text>
+      <rect x="300" y="22" width="180" height="56" rx="10" fill="var(--teal)"/><text x="390" y="46" style="fill:#fff" font-weight="600">Forecaster</text><text x="390" y="63" style="fill:#fff" font-size="11">diners to plates</text>
+      <rect x="300" y="112" width="180" height="56" rx="10" fill="var(--amber)"/><text x="390" y="136" style="fill:#fff" font-weight="600">Waste analyst</text><text x="390" y="153" style="fill:#fff" font-size="11">reviews and trims</text>
+      <rect x="600" y="22" width="180" height="56" rx="10" fill="var(--c-fcfs)"/><text x="690" y="46" style="fill:#fff" font-weight="600">Procurement</text><text x="690" y="63" style="fill:#fff" font-size="11">stock check, reorders</text>
+      <rect x="600" y="112" width="180" height="56" rx="10" fill="var(--red)"/><text x="690" y="136" style="fill:#fff" font-weight="600">Anomaly</text><text x="690" y="153" style="fill:#fff" font-size="11">odd absences, forecast misses</text></g>
+    <g class="mut" font-size="11.5"><text x="335" y="98" text-anchor="end">1 review request</text><text x="445" y="98">2 trim</text><text x="540" y="42" text-anchor="middle">3 final plates</text>
+      <text x="690" y="99" text-anchor="middle">4 all four agents report to the Coordinator</text></g></svg></div>
+  <div class="controls"><button class="btn" id="runma">Run the agents</button><span class="status" id="mastatus">Uses today's open meals, current absences and stock.</span></div>
+  <div id="ma-out"></div>
 </section>
 
 <section class="panel" id="live">
@@ -445,7 +464,8 @@ function renderRoster() {
   $('#att-sum').innerHTML = ms.map(m => { const a = R.students.filter(s => s.absent[m.meal_id] !== undefined).length; return `<span class="pill ${m.locked ? 'warn' : 'blue'}" title="${m.locked ? 'locked: plan approved' : ''}">${m.meal_type}: ${all - a} present, ${a} absent${m.locked ? ' (locked)' : ''}</span>`; }).join(' ');
   $('#att-bulk').innerHTML = ms.map(m => `<span style="display:flex;gap:6px;align-items:center"><b style="text-transform:capitalize">${m.meal_type}</b>
     <button class="btn ghost sm" data-bulk="reset" data-m="${m.meal_id}" ${m.locked ? 'disabled' : ''}>Everyone present</button>
-    <button class="btn ghost sm" data-bulk="random" data-m="${m.meal_id}" ${m.locked ? 'disabled' : ''}>Mark 8 random absent</button></span>`).join('');
+    <button class="btn ghost sm" data-bulk="random" data-m="${m.meal_id}" ${m.locked ? 'disabled' : ''}>Mark 8 random absent</button>
+    <button class="btn ghost sm" data-bulk="random40" data-m="${m.meal_id}" ${m.locked ? 'disabled' : ''} title="stress test for the anomaly agent">Mark 40 absent</button></span>`).join('');
   $('#roster').innerHTML = `<tr><th>Student</th><th>Room</th>${ms.map(m => `<th style="text-transform:capitalize">${m.meal_type}</th>`).join('')}<th>Whole day</th></tr>` +
     rows.map(s => `<tr><td>${esc(s.name)}</td><td class="mini">${esc(s.room)}</td>${ms.map(m => {
       const ab = s.absent[m.meal_id] !== undefined;
@@ -460,7 +480,7 @@ $('#roster').onclick = async e => {
 };
 $('#att-bulk').onclick = async e => {
   const b = e.target.closest('button[data-bulk]'); if (!b) return;
-  const r = await post('/api/absence/bulk', {meal_id: +b.dataset.m, mode: b.dataset.bulk, count: 8});
+  const r = await post('/api/absence/bulk', {meal_id: +b.dataset.m, mode: b.dataset.bulk === 'random40' ? 'random' : b.dataset.bulk, count: b.dataset.bulk === 'random40' ? 40 : 8});
   if (r.error) toast(r.error); loadRoster();
 };
 
@@ -509,6 +529,38 @@ async function loadDb() {
   $('#db-plan').textContent = d.query + '\n=> ' + d.plan;
 }
 $('#fktest').onclick = async () => { const r = await post('/api/db/fk-test'); $('#fkout').innerHTML = `<span class="pill ${r.enforced ? 'ok' : 'bad'}">${r.enforced ? 'refused' : 'accepted'}</span> <span class="mini">${esc(r.message)}</span>`; };
+
+/* ======================= NEW: multi-agent ======================= */
+const AG_COL = {Coordinator:'--blue', Forecaster:'--teal', WasteAnalyst:'--amber', Procurement:'--c-fcfs', Anomaly:'--red'};
+const stPill = {ready:['ready','ok'], capped:['capped by stock','warn'], at_risk:['at risk','bad'], review:['needs review','warn']};
+$('#runma').onclick = async () => {
+  $('#runma').disabled = true; $('#mastatus').textContent = 'agents running…';
+  const r = await post('/api/multiagent/run'); $('#runma').disabled = false;
+  if (r.error) { $('#mastatus').textContent = r.error; $('#ma-out').innerHTML = ''; return; }
+  $('#mastatus').textContent = `round finished in ${r.duration_ms} ms, ${r.messages.length} messages`;
+  window.MA = r; renderMA(r);
+};
+function renderMA(r) {
+  const meals = r.meals.map(m => { const [t, c] = stPill[m.status] || [m.status, '']; return `<div class="card meal"><div style="display:flex;justify-content:space-between"><h3>${esc(m.meal_type)}</h3><span class="pill ${c}">${t}</span></div>
+    <div class="kv"><span>Opted out</span><span>${m.declared_absent}</span></div><div class="kv"><span>Expected diners</span><span>${Math.round(m.expected)}</span></div>
+    <div class="kv"><span>Forecaster base plates</span><span>${m.base_plates}</span></div><div class="kv"><span>Final plates (after review and stock check)</span><b>${m.plates}</b></div>
+    ${m.notes.map(n => `<div class="reason">${esc(n)}</div>`).join('')}
+    <div style="margin-top:10px"><button class="btn sm" data-ma="${m.meal_id}" data-p="${m.plates}" ${m.plates < 1 ? 'disabled' : ''}>Approve ${m.plates} plates</button></div></div>`; }).join('');
+  const orders = r.orders.length ? `<table><tr><th>Item</th><th class="num">Order</th><th>Why</th></tr>${r.orders.map(o => `<tr><td>${esc(o.item)}</td><td class="num">${o.qty} ${esc(o.unit)}</td><td class="mini">${esc(o.reason)}</td></tr>`).join('')}</table>` : '<span class="note">No reorders needed.</span>';
+  const an = r.anomalies.length ? r.anomalies.map(a => `<div class="alert"><span class="pill ${a.severity === 'high' ? 'bad' : 'warn'}">${a.severity}</span> ${esc(a.text)}</div>`).join('') : '<span class="note">Nothing unusual.</span>';
+  const ins = r.insights.map(i => `<div class="alert">${esc(i)}</div>`).join('');
+  const msgs = r.messages.map(m => `<tr><td class="num mini">${m.t_ms} ms</td><td><b style="color:var(${AG_COL[m.from]})">${m.from}</b> &rarr; <b style="color:var(${AG_COL[m.to]})">${m.to}</b></td><td><span class="pill">${esc(m.kind)}</span></td><td class="mini">${esc(m.summary)}</td></tr>`).join('');
+  $('#ma-out').innerHTML = `<div class="row meals">${meals}</div>
+    <div class="row two"><div class="card"><h2>Procurement agent &middot; reorders</h2>${orders}</div><div class="card"><h2>Anomaly agent</h2>${an}<h2 style="margin-top:14px">Waste analyst &middot; lowest turnout</h2>${ins}</div></div>
+    <div class="card" style="margin-top:12px"><h2>Message timeline</h2><div class="tbl-wrap" style="max-height:340px"><table><tr><th class="num">Time</th><th>From &rarr; to</th><th>Kind</th><th>Content</th></tr>${msgs}</table></div></div>`;
+}
+$('#ma-out').onclick = async e => {
+  const b = e.target.closest('button[data-ma]'); if (!b) return; b.disabled = true;
+  const r = await post('/api/agent/approve', {meal_id: +b.dataset.ma, plates: +b.dataset.p});
+  toast(r.error ? r.error : `Approved ${r.plates} plates. Stock deducted in one transaction.`);
+  loadOverview(); loadRoster();
+  if (!r.error) { const rr = await post('/api/multiagent/run'); if (!rr.error) renderMA(rr); else $('#ma-out').innerHTML = `<p class="note">${esc(rr.error)}</p>`; }
+};
 
 loadOverview(); loadRoster();
 if (location.hash && $('#' + location.hash.slice(1))) show(location.hash.slice(1));

@@ -22,6 +22,15 @@ stock, and waits for a human to approve. Approval deducts stock and logs prep in
 (`BEGIN IMMEDIATE`, all or nothing; the low-stock trigger fires on its own). Closing a meal with the real
 diner count writes waste logs and adds the day to history, so the agent learns. Past history is
 synthetic demo data; the 7-day replay compares the agent with the old habit of cooking for everyone.
+**Multi-agent tab** (`dashboard/multiagent.py`): five agents (Coordinator, Forecaster, Waste analyst,
+Procurement, Anomaly), each in its own thread with its own inbox queue (the same producer-consumer
+pattern as the C++ `EventQueue`), communicating only by messages that are also saved to the
+`agent_messages` table. The Forecaster proposes plates, the Waste analyst reviews them and sends back a
+trim (agent to agent), the Forecaster sends final plates to Procurement, which checks stock for all meals
+and drafts reorders, while the Anomaly agent flags unusual opt-outs and forecast misses. The Coordinator
+resolves conflicts (for example capping plates to what stock allows) and a human approves each meal.
+Try it: Attendance, "Mark 40 absent" on lunch, then Multi-agent, "Run the agents".
+
 App data lives in `shrm_app.db` (delete it to start fresh). The original `dashboard/server.py` still works on its own.
 
 ## Current status: Phases 1–10 complete

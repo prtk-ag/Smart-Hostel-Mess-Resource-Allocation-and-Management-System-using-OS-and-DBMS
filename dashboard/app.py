@@ -25,6 +25,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import agent                                   # noqa: E402
+import multiagent                              # noqa: E402
 import server as base                          # noqa: E402  (stream, schedules, race helpers)
 
 ROOT = base.ROOT
@@ -70,6 +71,10 @@ def init_db():
         plates INTEGER NOT NULL, expected REAL NOT NULL, declared_absent INTEGER NOT NULL,
         approved_at TEXT NOT NULL DEFAULT (datetime('now')), actual_diners INTEGER, waste_plates INTEGER,
         closed_at TEXT);
+      CREATE TABLE IF NOT EXISTS agent_messages (
+        msg_id INTEGER PRIMARY KEY AUTOINCREMENT, round_id TEXT NOT NULL, seq INTEGER NOT NULL, t_ms REAL,
+        sender TEXT NOT NULL, recipient TEXT NOT NULL, kind TEXT NOT NULL, summary TEXT NOT NULL,
+        timestamp TEXT NOT NULL DEFAULT (datetime('now')));
     """)
     if con.execute("SELECT COUNT(*) FROM students").fetchone()[0] == 0:
         rng = random.Random(11)
@@ -356,6 +361,39 @@ def api_reset_today():
     return {"ok": True}
 
 
+def _log_msg(msg):
+    con = connect()
+    try:
+        con.execute("INSERT INTO agent_messages(round_id,seq,t_ms,sender,recipient,kind,summary) VALUES(?,?,?,?,?,?,?)",
+                    (msg["round"], msg["seq"], msg["t_ms"], msg["from"], msg["to"], msg["kind"], msg["summary"]))
+    finally:
+        con.close()
+
+
+def api_multiagent_run():
+    """One round of the five-agent system over today's OPEN meals (plans not yet approved)."""
+    con = connect()
+    meals = ensure_today(con)
+    total = con.execute("SELECT COUNT(*) FROM students").fetchone()[0]
+    locked = {r[0] for r in con.execute("SELECT meal_id FROM agent_plans")}
+    open_meals = []
+    for m in meals:
+        if m["meal_id"] in locked:
+            continue
+        a = con.execute("SELECT COUNT(*) FROM absences WHERE meal_id=?", (m["meal_id"],)).fetchone()[0]
+        open_meals.append({"meal_id": m["meal_id"], "meal_type": m["meal_type"], "declared_absent": a})
+    closed = [{"meal_type": r["meal_type"], "expected": r["expected"], "actual": r["actual_diners"]} for r in con.execute(
+        "SELECT m.meal_type, p.expected, p.actual_diners FROM agent_plans p JOIN meals m ON m.meal_id=p.meal_id "
+        "WHERE p.closed_at IS NOT NULL")]
+    snap = {"total": total, "weekday": date.today().weekday(), "meals": open_meals, "history": history_rows(con),
+            "inventory": inventory_rows(con), "closed": closed}
+    con.close()
+    if not open_meals:
+        raise ApiError("All of today's meals are already approved. Press 'Reset today (demo)' on Overview to run again.", 409)
+    rid = datetime.now().strftime("%H%M%S")
+    return multiagent.run_round(snap, rid, _log_msg)
+
+
 def api_db():
     con = connect()
     tables = [{"name": r["name"], "rows": con.execute(f'SELECT COUNT(*) FROM "{r["name"]}"').fetchone()[0]}
@@ -467,6 +505,8 @@ class Handler(base.Handler):
                   "/api/meal/close": api_close}
         if self.path in routes:
             self._json(routes[self.path], body)
+        elif self.path == "/api/multiagent/run":
+            self._json(api_multiagent_run)
         elif self.path == "/api/reset":
             self._json(api_reset_today)
         elif self.path == "/api/db/fk-test":

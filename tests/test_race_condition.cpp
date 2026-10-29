@@ -13,6 +13,7 @@
 // Usage: ./shrm_race_demo [threads] [iterations_per_thread]
 
 #include "db_manager.h"
+#include "paths.h"
 #include <cstdio>
 #include <iomanip>
 #include <iostream>
@@ -79,7 +80,7 @@ int main(int argc, char** argv) {
     {
         std::remove("shrm_race_unsafe.db");
         DbManager db("shrm_race_unsafe.db");
-        db.initSchema("server/db/schema.sql");
+        db.initSchema(schemaPath());
         int item_id = db.addInventoryItem("Rice", "kg", initial_qty, 0.0);
         int meal_id = db.createMeal("2026-01-01", "lunch");
 
@@ -104,7 +105,7 @@ int main(int argc, char** argv) {
     {
         std::remove("shrm_race_safe.db");
         DbManager db("shrm_race_safe.db");
-        db.initSchema("server/db/schema.sql");
+        db.initSchema(schemaPath());
         int item_id = db.addInventoryItem("Rice", "kg", initial_qty, 0.0);
         int meal_id = db.createMeal("2026-01-01", "lunch");
 

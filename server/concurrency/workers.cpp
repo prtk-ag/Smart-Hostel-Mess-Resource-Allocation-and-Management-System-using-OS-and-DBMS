@@ -12,7 +12,7 @@
 // within a transaction" error the moment their BEGINs overlap, because
 // transaction state lives on the connection, not per-thread -- we hit
 // exactly that bug during development before switching to this design.
-void runWorker(EventQueue& queue, const std::string& db_path, int worker_id) {
+void runWorker(EventQueue& queue, const std::string& db_path, int worker_id, WorkerStats* stats) {
     DbManager db(db_path);
 
     Event e;
@@ -29,10 +29,12 @@ void runWorker(EventQueue& queue, const std::string& db_path, int worker_id) {
                     db.logWaste(e.meal_id, e.item_id, e.quantity);
                     break;
             }
+            if (stats) ++stats->applied;
         } catch (const std::exception& ex) {
             // Deliberately non-fatal: a single rejected event (e.g.
             // insufficient stock) shouldn't stop the worker from
             // processing the rest of the queue.
+            if (stats) ++stats->rejected;
             std::cerr << "[worker " << worker_id << "] event failed: " << ex.what() << "\n";
         }
     }

@@ -7,6 +7,7 @@
 // Usage: ./shrm_pipeline_demo [db_path]   (defaults to shrm_pipeline.db)
 
 #include "db_manager.h"
+#include "paths.h"
 #include "seed_data.h"
 #include "event_queue.h"
 #include "workers.h"
@@ -24,7 +25,7 @@ int main(int argc, char** argv) {
     std::cout << "==================================================================\n";
 
     DbManager db(db_path);
-    db.initSchema("server/db/schema.sql");
+    db.initSchema(schemaPath());
     SeedSummary seeded = seedDatabase(db);
     std::cout << "Seeded " << seeded.students_added << " students, "
               << seeded.inventory_items_added << " inventory items, "
@@ -50,7 +51,7 @@ int main(int argc, char** argv) {
     // threads breaks logPrep's transactions) ------------------------
     std::vector<std::thread> workers;
     for (int w = 0; w < num_workers; ++w) {
-        workers.emplace_back(runWorker, std::ref(queue), db_path, w);
+        workers.emplace_back(runWorker, std::ref(queue), db_path, w, nullptr);
     }
 
     // --- Producers: push a realistic mix of event types -------------

@@ -7,7 +7,7 @@ four separate syllabus-topic demos bolted together.
 
 See `docs/` (or the project proposal PDF) for the full architecture writeup.
 
-## Current status: Phase 7 — FCFS / SJF / Priority scheduling (on top of the Phase 4/5 concurrency work)
+## Current status: Phase 8 — IPC: separate event-generator process + pipe (on top of the Phase 4/5 concurrency work)
 
 What's implemented right now:
 - Normalized schema (`server/db/schema.sql`): students, inventory, meals, menu,
@@ -54,7 +54,26 @@ What's implemented right now:
   real file-level locking serialize the transactions correctly, which is what
   the race demo above relies on.
 
-- **New in Phase 7:** `scheduleSJF()` and `schedulePriority()` (both
+- **New in Phase 8:** the first real **inter-process** communication. A separate
+  program, `shrm_event_generator`, invents attendance/prep/waste events and
+  sends them as text lines over a pipe to `shrm_ipc_server`, which validates
+  every line (`server/ipc/event_codec.*` — strict parser, rejects garbage),
+  pushes good ones onto the Phase 3 queue, and lets the Phase 4/5 workers
+  write them to SQLite. Two channel types behind one interface
+  (`server/ipc/channel.*`): `stdio` (generator `|` server — identical on
+  every OS) and `pipe:NAME` (a **named pipe**: `mkfifo` FIFO on Linux/macOS,
+  `CreateNamedPipe` on Windows, since Windows has no `mkfifo`). Start order
+  doesn't matter. Checked: 300 events + 4 malformed lines → 304 received, 4
+  rejected, 300 applied, DB rows match the generator's own counts exactly
+  (122 attendance, 99 prep, 79 waste). `shrm_ipc_test` has 82 checks (codec
+  round trip, 23 bad inputs rejected, 500 lines through a real pipe in
+  order); two deliberate codec bugs were caught.
+  **Windows:** the Windows named-pipe code is written against the Win32 API
+  but has not been compiled yet (no Windows machine here) — the stdio pipe
+  path is the safe fallback. Also new: CMake finds SQLite without pkg-config
+  (or downloads it), and programs find `schema.sql` from any folder.
+
+- **Phase 7:** `scheduleSJF()` and `schedulePriority()` (both
   non-preemptive, ties broken by arrival then id) share one engine and the same
   `buildResult()` metrics as FCFS. `shrm_scheduler_demo` now runs all three on
   the same lunch workload and prints a comparison table. Results (minutes):
@@ -90,6 +109,21 @@ What's implemented right now:
 Not implemented yet (see roadmap below): SJF and Priority scheduling, IPC,
 the event generator process, and the deadlock demo.
 
+## Building on Windows
+
+Easiest: install **CMake** and **Visual Studio Build Tools** (workload "Desktop
+development with C++"), open the project folder in a normal terminal, then:
+
+```bat
+build_windows.bat
+run_ipc_demo.bat
+```
+
+Or with MSYS2/MinGW: `pacman -S mingw-w64-ucrt-x86_64-{gcc,cmake,sqlite3}` and
+use the same CMake commands. Or WSL, where every Linux command above works
+unchanged. The executables end up in `build\Release\` (Visual Studio) or
+`build\` (MinGW) and can be run from any folder.
+
 ## Building
 
 Requires CMake, a C++17 compiler, and `libsqlite3-dev`.
@@ -109,6 +143,11 @@ cd ..                       # binaries load relative paths (schema.sql), so
 ./build/shrm_race_demo        # optional args: [threads] [iterations/thread]
 ./build/shrm_scheduler_demo   # FCFS/SJF/Priority tables, Gantt charts, comparison (no database needed)
 ./build/shrm_scheduler_test   # all three checked against hand-computed answers
+./build/shrm_ipc_test         # codec + named-pipe channel tests
+./build/shrm_event_generator --count 300 --bad 4 | ./build/shrm_ipc_server   # two processes, one pipe
+# named pipe version (two terminals):
+#   ./build/shrm_ipc_server --in pipe:demo
+#   ./build/shrm_event_generator --count 300 --out pipe:demo
 ```
 
 `shrm_server` creates `shrm.db` and prints inventory/alert state as it runs
@@ -139,6 +178,9 @@ shrm/
 │   │   ├── job.h             # Job / JobResult / ScheduleResult
 │   │   └── scheduler.h/.cpp  # scheduleFCFS/SJF/Priority(), shared buildResult(), Gantt printer
 │   ├── scheduler_demo.cpp    # Phase 6/7 demo (shrm_scheduler_demo)
+│   ├── ipc/                  # Phase 8: event_codec, channel (stdio / named pipe, POSIX + Win32)
+│   ├── event_generator.cpp   # Phase 8 generator process (shrm_event_generator)
+│   ├── ipc_server.cpp        # Phase 8 server process (shrm_ipc_server)
 │   ├── concurrency/
 │   │   ├── event_queue.h/.cpp  # Event struct + thread-safe EventQueue
 │   │   └── workers.h/.cpp      # runWorker() -- the real queue consumer
@@ -154,7 +196,7 @@ shrm/
 ```
 
 As later phases land, this grows into the structure from the proposal:
-`server/concurrency/`, `server/scheduler/`, `server/ipc/`, `sensor_simulator/`
+`server/concurrency/`, `server/scheduler/`, `server/ipc/`
 (the event generator), and `tests/` for the race-condition and deadlock demos.
 
 ## Roadmap (2-day update cadence)
@@ -170,8 +212,8 @@ meaningful commit — update the repo at the end of each one.
 | 4 | ✅ Producer-consumer threading (part 2) | This commit. Real worker threads (`runWorker`) draining the queue into the DB via `DbManager`; `shrm_pipeline_demo` proves the full pipeline end to end. |
 | 5 | ✅ Fix the race condition | This commit (bundled with #4 — they're the same experiment). `shrm_race_demo` reproduces the lost-update race with `logPrepUnsafe` (180/200 deductions lost at 10×20 threads), then shows `logPrep`'s transaction losing zero, every run. Also fixed a real bug hit along the way: worker threads need one SQLite connection *each*, not a shared one — see the README section above. |
 | 6 | ✅ Scheduler (part 1) | `Job` model + FCFS with waiting/turnaround/response metrics, Gantt chart output, and tests checked against hand-computed answers. |
-| 7 | ✅ Scheduler (part 2) | This commit. SJF + Priority on a shared engine, side-by-side comparison with FCFS, 47 tests. |
-| 8 | IPC — event generator process | Split `sensor_simulator/` into its own binary, generating synthetic attendance/waste/stock events and writing them to a named pipe (`mkfifo`). Main server reads from the pipe instead of hardcoded demo calls. |
+| 7 | ✅ Scheduler (part 2) | SJF + Priority on a shared engine, side-by-side comparison with FCFS, 47 tests. |
+| 8 | ✅ IPC | This commit. Separate event-generator process → pipe (stdio or named pipe, POSIX + Windows) → IPC server → queue → workers → DB. Strict line codec, 82 tests. |
 | 9 | Deadlock demo | Construct the two-thread, two-lock deadlock on purpose (`tests/test_deadlock.cpp`), show it hang, then fix with consistent lock ordering. |
 | 10 | Indexing experiment + polish | Seed a larger synthetic dataset (~5,000 rows, matching the scale used in the reference papers), measure a hot query before/after the existing indexes, capture the numbers for the report. |
 | 11+ | File logging, CLI polish, report writeup | Concurrent-safe file logger, tidy up the demo CLI, start writing the final report using the four experiment results as the centerpiece. |
@@ -190,7 +232,7 @@ piece, not partial/broken code.
 | 4/5 | Real worker threads + race condition (reproduce & fix) | Anant Agarwal (DB/transaction side: Prateek Agarwal) | ✅ Done |
 | 6 | Scheduler part 1 — FCFS | Arjun Singh Poonia | ✅ Done |
 | 7 | Scheduler part 2 — SJF, Priority, comparison | Arjun Singh Poonia | ✅ Done |
-| 8 | IPC — event generator process, named pipe | Arjun Singh Poonia | ⬜ |
+| 8 | IPC — event generator process, named pipe | Arjun Singh Poonia | ✅ Done |
 | 9 | Deadlock demo (construct → fix) | Anant Agarwal | ⬜ |
 | 10 | Indexing experiment at scale (~5,000 rows) | Prateek Agarwal | ⬜ |
 | 11+ | File logging, CLI polish, integration, final report | Tanishq Agrawal (Team Lead) | ⬜ |

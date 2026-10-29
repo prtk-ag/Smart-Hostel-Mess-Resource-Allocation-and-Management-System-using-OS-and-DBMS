@@ -6,6 +6,7 @@
 // and the low-stock trigger fires and is visible via getAlerts().
 
 #include "db_manager.h"
+#include "paths.h"
 #include <iostream>
 #include <iomanip>
 
@@ -34,7 +35,7 @@ static void printAlerts(DbManager& db) {
 int main() {
     const std::string db_path = "shrm.db";
     DbManager db(db_path);
-    db.initSchema("server/db/schema.sql");
+    db.initSchema(schemaPath());
 
     std::cout << "SHRM Phase 1 demo\n";
     std::cout << "=================\n";

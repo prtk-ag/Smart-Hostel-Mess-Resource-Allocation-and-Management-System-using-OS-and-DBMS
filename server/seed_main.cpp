@@ -10,6 +10,7 @@
 // Usage: ./shrm_seed [db_path]   (defaults to shrm_seed.db)
 
 #include "db_manager.h"
+#include "paths.h"
 #include "seed_data.h"
 #include <iostream>
 #include <cstdio>
@@ -27,7 +28,7 @@ int main(int argc, char** argv) {
 
     try {
         DbManager db(db_path);
-        db.initSchema("server/db/schema.sql");
+        db.initSchema(schemaPath());
 
         SeedSummary summary = seedDatabase(db);
 

@@ -179,3 +179,7 @@ target_link_libraries(shrm_ipc_server PRIVATE shrm_ipc ${SQLITE3_LIBRARIES})
 
 add_executable(shrm_ipc_test tests/test_ipc.cpp)
 target_link_libraries(shrm_ipc_test PRIVATE shrm_ipc)
+
+# Phase 8b: dashboard helper -- scheduler results as JSON.
+add_executable(shrm_scheduler_json server/scheduler_json.cpp)
+target_link_libraries(shrm_scheduler_json PRIVATE shrm_scheduler)

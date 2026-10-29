@@ -4,3 +4,4 @@ build/
 *.log
 .vscode/
 .idea/
+shrm_dashboard.db

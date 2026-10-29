@@ -109,6 +109,23 @@ What's implemented right now:
 Not implemented yet (see roadmap below): SJF and Priority scheduling, IPC,
 the event generator process, and the deadlock demo.
 
+## Dashboard (browser interface)
+
+A small local web page that runs the real C++ programs and shows what they do:
+live inventory, alerts and record counts while the generator streams events
+through the pipe into the database; the FCFS / SJF / Priority Gantt charts; and
+a before/after bar chart of the race condition. Needs only Python 3 (no pip
+installs) and the project built first.
+
+```bash
+python3 dashboard/server.py          # Windows: py dashboard\server.py   (or run_dashboard.bat)
+# then open http://127.0.0.1:8080
+```
+
+It listens on localhost only. Press **Start stream** on the first tab and watch
+the numbers move; when the oil or dal runs low the low-stock trigger fires and
+workers log "Not enough ..." for requests the database correctly refuses.
+
 ## Building on Windows
 
 Easiest: install **CMake** and **Visual Studio Build Tools** (workload "Desktop
@@ -191,6 +208,7 @@ shrm/
 │   ├── test_event_queue.cpp     # Phase 3 correctness check (shrm_queue_test)
 │   ├── test_race_condition.cpp  # Phase 4/5 race demo (shrm_race_demo)
 │   └── test_scheduler.cpp       # Phase 6/7 scheduler tests (shrm_scheduler_test)
+├── dashboard/                # browser interface: server.py (stdlib only) + index.html
 ├── CMakeLists.txt
 └── README.md
 ```

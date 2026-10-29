@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SHRM Dashboard</title>
+<style>
+:root{
+  --bg:#f5f6f8; --card:#ffffff; --ink:#1b2430; --muted:#667085; --line:#e3e6eb;
+  --blue:#2b5b91; --teal:#0b8a7a; --amber:#c47f00; --red:#c0392b; --green:#2e8b57;
+  --c-fcfs:#8896a8; --c-sjf:#2b5b91; --c-prio:#0b8a7a;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#10151c; --card:#18202a; --ink:#e8edf3; --muted:#93a0b2; --line:#283241;
+    --blue:#6ea3e0; --teal:#3ccbb5; --amber:#e5a93a; --red:#ef6f60; --green:#5fc08a;
+    --c-fcfs:#7d8ba0; --c-sjf:#6ea3e0; --c-prio:#3ccbb5; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:18px 20px 0;max-width:1100px;margin:0 auto}
+h1{font-size:20px;margin:0}
+.sub{color:var(--muted);font-size:13px;margin-top:2px}
+nav{display:flex;gap:4px;margin:14px 0 0;border-bottom:1px solid var(--line)}
+nav button{background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);padding:9px 14px;font:inherit;cursor:pointer}
+nav button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--blue);font-weight:600}
+main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
+.panel{display:none} .panel.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.row{display:grid;gap:12px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:12px}
+.kpi .n{font-size:28px;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi .l{color:var(--muted);font-size:13px}
+.two{grid-template-columns:repeat(auto-fit,minmax(340px,1fr));margin-bottom:12px}
+h2{font-size:14px;margin:0 0 10px;color:var(--muted);font-weight:600;letter-spacing:.02em;text-transform:uppercase}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:12px}
+.controls label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:3px}
+input[type=number]{width:96px;padding:7px 8px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--ink);font:inherit}
+button.btn{padding:8px 16px;border-radius:8px;border:1px solid var(--blue);background:var(--blue);color:#fff;font:inherit;cursor:pointer}
+button.btn.ghost{background:none;color:var(--blue)}
+button.btn:disabled{opacity:.45;cursor:default}
+.status{font-size:13px;color:var(--muted);align-self:center}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:6px}
+.dot.live{background:var(--green);animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.35}}
+@media (prefers-reduced-motion: reduce){.dot.live{animation:none}}
+.inv{display:grid;grid-template-columns:110px 1fr 90px;gap:8px;align-items:center;margin:7px 0;font-size:14px}
+.bar{position:relative;height:14px;background:var(--line);border-radius:7px}
+.bar>i{position:absolute;left:0;top:0;bottom:0;border-radius:7px;background:var(--teal);transition:width .4s}
+.bar>i.low{background:var(--red)}
+.bar>b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.55}
+.inv .q{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.alert{font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)} .alert:last-child{border:0}
+.alert time{color:var(--muted);margin-right:6px}
+.log{font:12px/1.5 var(--mono);color:var(--muted);max-height:190px;overflow:auto;white-space:pre-wrap}
+.note{color:var(--muted);font-size:13px;margin:0 0 12px}
+svg text{font-family:inherit;fill:var(--ink)} svg .mut{fill:var(--muted)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)} th{color:var(--muted);font-weight:600;font-size:12px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.legend{display:flex;gap:14px;font-size:13px;color:var(--muted);margin-top:6px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;background:var(--c)}
+pre.out{font:12px/1.45 var(--mono);color:var(--muted);white-space:pre-wrap;margin:10px 0 0;max-height:220px;overflow:auto}
+</style>
+</head>
+<body>
+<header>
+  <h1>SHRM &middot; Smart Hostel Mess Resource Manager</h1>
+  <div class="sub">Team MiraiSentinals &middot; live view of the real C++ programs</div>
+  <nav role="tablist">
+    <button role="tab" aria-selected="true" data-tab="live">Live pipeline</button>
+    <button role="tab" aria-selected="false" data-tab="sched">Scheduling</button>
+    <button role="tab" aria-selected="false" data-tab="race">Race condition</button>
+  </nav>
+</header>
+<main>
+
+<section class="panel on" id="live">
+  <p class="note">Starts two separate programs joined by a pipe: <b>event generator</b> &rarr; pipe &rarr; <b>IPC server</b> (queue, 3 worker threads, SQLite). This page only reads the database they write.</p>
+  <div class="controls">
+    <label>Events<input type="number" id="count" value="800" min="1" max="5000"></label>
+    <label>Delay per event (ms)<input type="number" id="delay" value="15" min="0" max="1000"></label>
+    <label>Bad lines<input type="number" id="bad" value="4" min="0" max="50"></label>
+    <button class="btn" id="start">Start stream</button>
+    <button class="btn ghost" id="stop" disabled>Stop</button>
+    <span class="status"><span class="dot" id="dot"></span><span id="statustext">idle</span></span>
+  </div>
+  <div class="row kpis">
+    <div class="card kpi"><div class="n" id="k-att">0</div><div class="l">attendance records</div></div>
+    <div class="card kpi"><div class="n" id="k-prep">0</div><div class="l">prep logs</div></div>
+    <div class="card kpi"><div class="n" id="k-waste">0</div><div class="l">waste logs</div></div>
+    <div class="card kpi"><div class="n" id="k-alerts">0</div><div class="l">low-stock alerts</div></div>
+  </div>
+  <div class="row two">
+    <div class="card"><h2>Inventory <span style="text-transform:none;font-weight:400">(line = reorder level)</span></h2><div id="inv"><span class="note">Start a stream to create the database.</span></div></div>
+    <div class="card"><h2>Records written over time</h2><div id="chart"></div><div class="legend"><span style="--c:var(--blue)">attendance</span><span style="--c:var(--teal)">prep</span><span style="--c:var(--amber)">waste</span></div></div>
+  </div>
+  <div class="row two">
+    <div class="card"><h2>Low-stock alerts (trigger)</h2><div id="alerts"><span class="note">None yet.</span></div></div>
+    <div class="card"><h2>Program log</h2><div class="log" id="log">&nbsp;</div></div>
+  </div>
+</section>
+
+<section class="panel" id="sched">
+  <p class="note">One cooking station, six dishes, same workload for all three algorithms. Computed by the C++ scheduler, not by this page.</p>
+  <div id="sched-cards" class="row" style="gap:12px"></div>
+  <div class="card" style="margin-top:12px"><h2>Comparison (minutes)</h2><div id="sched-table"></div></div>
+</section>
+
+<section class="panel" id="race">
+  <p class="note">10 threads each deduct 1 kg from the same stock 20 times (200 deductions). Run once without a transaction and once with one.</p>
+  <div class="controls"><button class="btn" id="runrace">Run race demo</button><span class="status" id="racestatus"></span></div>
+  <div class="card"><h2>Deductions lost out of 200</h2><div id="racechart"><span class="note">Press the button.</span></div><pre class="out" id="raceout" hidden></pre></div>
+</section>
+
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* tabs */
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav button').forEach(x => x.setAttribute('aria-selected', x === b));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === b.dataset.tab));
+  if (b.dataset.tab === 'sched' && !schedLoaded) loadSched();
+});
+
+/* ---------- live pipeline ---------- */
+const series = []; let lastRunning = false;
+async function post(url, body) {
+  const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body||{})});
+  return r.json();
+}
+$('#start').onclick = async () => {
+  series.length = 0;
+  const r = await post('/api/stream/start', {count:+$('#count').value, delay_ms:+$('#delay').value, bad:+$('#bad').value});
+  if (r.error) alert(r.error);
+};
+$('#stop').onclick = () => post('/api/stream/stop');
+
+function drawChart() {
+  const W = 480, H = 190, L = 34, B = 22, T = 8, R = 8;
+  if (series.length < 2) { $('#chart').innerHTML = '<span class="note">Waiting for data…</span>'; return; }
+  const t1 = series[series.length-1].t, ymax = Math.max(10, ...series.map(p => Math.max(p.a, p.p, p.w)));
+  const x = t => L + (W-L-R) * t / Math.max(t1, 1), y = v => H-B - (H-B-T) * v / ymax;
+  const path = k => series.map((p,i) => (i?'L':'M') + x(p.t).toFixed(1) + ' ' + y(p[k]).toFixed(1)).join(' ');
+  let g = '';
+  for (let i = 0; i <= 4; i++) { const v = ymax*i/4, yy = y(v);
+    g += `<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="${css('--line')}"/><text class="mut" x="${L-6}" y="${yy+4}" font-size="11" text-anchor="end">${Math.round(v)}</text>`; }
+  g += `<text class="mut" x="${W-R}" y="${H-5}" font-size="11" text-anchor="end">${t1.toFixed(0)} s</text>`;
+  $('#chart').innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Records written over time">${g}
+    <path d="${path('a')}" fill="none" stroke="${css('--blue')}" stroke-width="2"/>
+    <path d="${path('p')}" fill="none" stroke="${css('--teal')}" stroke-width="2"/>
+    <path d="${path('w')}" fill="none" stroke="${css('--amber')}" stroke-width="2"/></svg>`;
+}
+
+async function poll() {
+  try {
+    const s = await (await fetch('/api/state')).json();
+    const c = s.counts || {};
+    $('#k-att').textContent = c.attendance ?? 0; $('#k-prep').textContent = c.prep ?? 0;
+    $('#k-waste').textContent = c.waste ?? 0; $('#k-alerts').textContent = c.alerts ?? 0;
+    const run = s.stream.running;
+    $('#dot').className = 'dot' + (run ? ' live' : '');
+    $('#statustext').textContent = run ? `streaming… ${s.stream.elapsed}s` : (s.stream.elapsed ? `finished in ${s.stream.elapsed}s` : 'idle');
+    $('#start').disabled = run; $('#stop').disabled = !run;
+    if (s.inventory.length) {
+      $('#inv').innerHTML = s.inventory.map(i => {
+        const max = Math.max(i.quantity_available, i.reorder_threshold * 4, 1);
+        const cap = Math.max(...s.inventory.filter(z => z.item_name === i.item_name).map(z => z.quantity_available), i.reorder_threshold*5, 100);
+        const w = Math.min(100, 100 * i.quantity_available / cap), tl = Math.min(100, 100 * i.reorder_threshold / cap);
+        const low = i.quantity_available < i.reorder_threshold;
+        return `<div class="inv"><span>${esc(i.item_name)}</span><div class="bar"><i class="${low?'low':''}" style="width:${w}%"></i><b style="left:${tl}%"></b></div><span class="q">${i.quantity_available.toFixed(1)} ${esc(i.unit)}</span></div>`;
+      }).join('');
+    }
+    if (s.alerts.length) $('#alerts').innerHTML = s.alerts.map(a => `<div class="alert"><time>${esc(a.timestamp)}</time>${esc(a.message)}</div>`).join('');
+    const log = $('#log'), atBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 8;
+    log.textContent = s.stream.log.length ? s.stream.log.join('\n') : ' ';
+    if (atBottom) log.scrollTop = log.scrollHeight;
+    if (run || lastRunning) { series.push({t: s.stream.elapsed, a: c.attendance||0, p: c.prep||0, w: c.waste||0}); drawChart(); }
+    lastRunning = run;
+  } catch (e) { $('#statustext').textContent = 'dashboard server not reachable'; }
+}
+setInterval(poll, 700); poll();
+
+/* ---------- scheduling ---------- */
+let schedLoaded = false;
+const colours = {FCFS:'--c-fcfs', SJF:'--c-sjf', Priority:'--c-prio'};
+async function loadSched() {
+  const d = await (await fetch('/api/schedules')).json();
+  if (d.error) { $('#sched-cards').innerHTML = `<div class="card">${esc(d.error)}</div>`; return; }
+  schedLoaded = true;
+  const maxT = Math.max(...d.schedules.map(s => s.makespan));
+  $('#sched-cards').innerHTML = d.schedules.map(s => {
+    const W = 900, L = 10, H = 74, k = (W-2*L) / maxT, col = css(colours[s.algorithm]);
+    const segs = s.jobs.map(j => {
+      const x = L + j.start*k, w = (j.end-j.start)*k;
+      return `<g><rect x="${x}" y="8" width="${w-2}" height="36" rx="4" fill="${col}" opacity="${j.id%2?1:.78}"><title>${esc(j.name)}: starts ${j.start}, ends ${j.end}, waited ${j.waiting} min</title></rect>
+        <text x="${x+w/2-1}" y="31" font-size="12" text-anchor="middle" fill="#fff" style="fill:#fff">${w > j.name.length*7+8 ? esc(j.name) : ''}</text>
+        <text class="mut" x="${x}" y="62" font-size="11">${j.start}</text></g>`;
+    }).join('');
+    return `<div class="card"><h2 style="color:${col}">${s.algorithm} &middot; avg wait ${s.avg_waiting.toFixed(2)} min</h2>
+      <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${s.algorithm} schedule">${segs}<text class="mut" x="${W-L}" y="62" font-size="11" text-anchor="end">${s.makespan}</text></svg>
+      <div class="note" style="margin:4px 0 0">Order: ${s.jobs.map(j => esc(j.name)).join(' → ')}</div></div>`;
+  }).join('');
+  $('#sched-table').innerHTML = `<table><tr><th>Algorithm</th><th class="num">Avg wait</th><th class="num">Avg turnaround</th><th class="num">Makespan</th></tr>` +
+    d.schedules.map(s => `<tr><td>${s.algorithm}</td><td class="num">${s.avg_waiting.toFixed(2)}</td><td class="num">${s.avg_turnaround.toFixed(2)}</td><td class="num">${s.makespan}</td></tr>`).join('') +
+    `</table><p class="note" style="margin:10px 0 0">Same total time for all three — only the order changes. SJF waits least but can starve long dishes; Priority can starve low-priority ones.</p>`;
+}
+
+/* ---------- race ---------- */
+$('#runrace').onclick = async () => {
+  $('#runrace').disabled = true; $('#racestatus').textContent = 'running both versions…';
+  const r = await post('/api/race');
+  $('#runrace').disabled = false;
+  if (r.error) { $('#racestatus').textContent = r.error; return; }
+  $('#racestatus').textContent = '';
+  const W = 600, H = 150, L = 190, m = r.total;
+  const row = (label, lost, y, col) => {
+    const w = (W-L-70) * lost / m;
+    return `<text x="${L-10}" y="${y+21}" font-size="14" text-anchor="end">${label}</text>
+      <rect x="${L}" y="${y}" width="${Math.max(w,2)}" height="30" rx="4" fill="${col}"/>
+      <text x="${L+Math.max(w,2)+8}" y="${y+21}" font-size="14" font-weight="600">${lost} lost</text>`;
+  };
+  $('#racechart').innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Lost updates, unsafe versus transactional">
+    ${row('No transaction', r.unsafe_lost, 20, css('--red'))}${row('With transaction', r.safe_lost, 75, css('--green'))}
+    <text class="mut" x="${L}" y="130" font-size="12">out of ${m} deductions</text></svg>`;
+  $('#raceout').hidden = false; $('#raceout').textContent = r.output;
+};
+</script>
+</body>
+</html>

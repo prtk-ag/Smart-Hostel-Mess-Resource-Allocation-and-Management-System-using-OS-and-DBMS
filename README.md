@@ -139,3 +139,37 @@ meaningful commit — update the repo at the end of each one.
 Adjust pacing as needed — the important thing for the mentor-facing commit
 history is that each 2-day commit corresponds to one working, demonstrable
 piece, not partial/broken code.
+
+## Team & role assignments
+
+| Phase | What | Owner | Status |
+|---|---|---|---|
+| 1 | DB schema, transactions, trigger, indexing | Prateek Agarwal | ✅ Done |
+| 2 | Seed data script | Prateek Agarwal | ✅ Done |
+| 3 | Thread-safe producer-consumer queue | Anant Agarwal | ✅ Done |
+| 4/5 | Real worker threads + race condition (reproduce & fix) | Anant Agarwal (DB/transaction side: Prateek Agarwal) | ✅ Done |
+| 6 | Scheduler part 1 — FCFS | Arjun Singh Poonia | ⬜ Next |
+| 7 | Scheduler part 2 — SJF, Priority, comparison | Arjun Singh Poonia | ⬜ |
+| 8 | IPC — event generator process, named pipe | Arjun Singh Poonia | ⬜ |
+| 9 | Deadlock demo (construct → fix) | Anant Agarwal | ⬜ |
+| 10 | Indexing experiment at scale (~5,000 rows) | Prateek Agarwal | ⬜ |
+| 11+ | File logging, CLI polish, integration, final report | Tanishq Agrawal (Team Lead) | ⬜ |
+
+**Why it's split this way:**
+- **Prateek — DBMS layer** (1, 2, 10): schema, transactions, seed data, indexing.
+  Phase 10 extends work already owned rather than starting a new subsystem.
+- **Anant — Concurrency** (3, 4/5, 9): the queue, worker threads, the race
+  condition, and now the deadlock demo all reuse the same threading/locking
+  primitives, so one owner avoids two people re-learning the same subsystem.
+- **Arjun — Scheduler + IPC** (6, 7, 8): fully self-contained, no dependency
+  on the DB or concurrency code already merged, so this can run fully in
+  parallel with Anant's deadlock work.
+- **Tanishq — Integration + report** (11+): stays out of individual modules
+  to focus on merging branches, keeping the build green, and assembling the
+  four headline experiments (race condition, deadlock, scheduling comparison,
+  indexing) into the final report and demo script.
+
+**Workflow:** one branch per owner (`scheduler-ipc`, `deadlock-demo`,
+`indexing-experiment`), merged into `main` every 2 days. Whoever merges runs
+a full build check first — all executables listed under Building above must
+still compile and pass before the merge lands.

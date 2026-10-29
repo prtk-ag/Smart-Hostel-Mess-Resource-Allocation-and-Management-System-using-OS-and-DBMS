@@ -48,6 +48,8 @@ public:
                           double initial_qty, double reorder_threshold);
     int createMeal(const std::string& date, const std::string& meal_type);
     void logAttendance(int student_id, int meal_id);
+    int addMenuEntry(const std::string& day_of_week, const std::string& meal_type,
+                      const std::string& dish_name);
 
     // Transactional: deducts stock and logs the prep event atomically.
     // Throws InsufficientStockError (after rolling back) if there is

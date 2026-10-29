@@ -98,6 +98,24 @@ void DbManager::logAttendance(int student_id, int meal_id) {
     sqlite3_finalize(stmt);
 }
 
+int DbManager::addMenuEntry(const std::string& day_of_week, const std::string& meal_type,
+                             const std::string& dish_name) {
+    sqlite3_stmt* stmt;
+    const char* sql =
+        "INSERT INTO menu (day_of_week, meal_type, dish_name) VALUES (?, ?, ?);";
+    sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr);
+    sqlite3_bind_text(stmt, 1, day_of_week.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, meal_type.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, dish_name.c_str(), -1, SQLITE_TRANSIENT);
+    if (sqlite3_step(stmt) != SQLITE_DONE) {
+        std::string err = sqlite3_errmsg(db_);
+        sqlite3_finalize(stmt);
+        throw std::runtime_error("addMenuEntry failed: " + err);
+    }
+    sqlite3_finalize(stmt);
+    return static_cast<int>(sqlite3_last_insert_rowid(db_));
+}
+
 // This is the core transactional operation described in the proposal:
 // deduct stock + insert the prep log, atomically. If stock is
 // insufficient, the whole transaction is rolled back and an

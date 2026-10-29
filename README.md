@@ -7,7 +7,7 @@ four separate syllabus-topic demos bolted together.
 
 See `docs/` (or the project proposal PDF) for the full architecture writeup.
 
-## Current status: Phase 1 — schema + transactional CRUD
+## Current status: Phase 2 — seed data on top of the schema/transactions layer
 
 What's implemented right now:
 - Normalized schema (`server/db/schema.sql`): students, inventory, meals, menu,
@@ -22,6 +22,14 @@ What's implemented right now:
 - `server/main.cpp` — a runnable demo that exercises all of the above: a normal
   prep transaction, a prep that pushes stock below threshold (trigger fires), and
   a prep that's deliberately too large (transaction rolls back).
+- **New in Phase 2:** `server/db/seed_data.cpp` + `server/seed_main.cpp` — a
+  `shrm_seed` CLI that populates a fresh DB with 8 students, a stocked inventory
+  (6 items), a full week's menu (21 entries), and today's three meals with
+  attendance already logged. This is the realistic dataset the threading and
+  scheduler phases need to work against, instead of the single hand-inserted
+  item `shrm_server`'s demo uses.
+- `DbManager::addMenuEntry()` — the CRUD method the seeder needed that Phase 1
+  hadn't added yet (menu table existed in the schema, nothing wrote to it).
 
 Not implemented yet (see roadmap below): multithreading, the scheduler, IPC, the
 race-condition/deadlock demos, and the event generator process.
@@ -37,23 +45,33 @@ sudo apt-get install cmake g++ libsqlite3-dev
 mkdir build && cd build
 cmake ..
 make
-./shrm_server
+cd ..                  # both binaries load schema.sql via a relative path,
+./build/shrm_server     # so run them from the project root, not from build/
+./build/shrm_seed       # seeds shrm_seed.db instead of shrm.db -- keeps the
+                        # two demos from stepping on each other's data
 ```
 
-This creates `shrm.db` in the working directory and prints inventory/alert state
-as it runs through the demo scenarios.
+`shrm_server` creates `shrm.db` and prints inventory/alert state as it runs
+through the transaction/rollback demo. `shrm_seed` creates (or overwrites)
+`shrm_seed.db` with the full sample dataset described above; it's safe to
+re-run — it deletes the target file first rather than erroring on the
+`inventory.item_name UNIQUE` constraint. Pass a path to seed somewhere else:
+`./build/shrm_seed path/to/other.db`.
 
 ## Project structure
 
 ```
 shrm/
 ├── server/
-│   ├── main.cpp              # Phase 1 demo entry point
+│   ├── main.cpp              # Phase 1 demo entry point (shrm_server)
+│   ├── seed_main.cpp         # Phase 2 seed CLI entry point (shrm_seed)
 │   ├── db/
 │   │   ├── schema.sql        # table definitions, trigger, indexes
-│   │   └── db_manager.cpp    # SQLite wrapper + transactional logPrep()
+│   │   ├── db_manager.cpp    # SQLite wrapper + transactional logPrep()
+│   │   └── seed_data.cpp     # sample students/inventory/menu/meals/attendance
 │   └── include/
-│       └── db_manager.h
+│       ├── db_manager.h
+│       └── seed_data.h
 ├── CMakeLists.txt
 └── README.md
 ```
@@ -69,8 +87,8 @@ meaningful commit — update the repo at the end of each one.
 
 | # | Focus | What "done" looks like |
 |---|---|---|
-| 1 | ✅ Schema + transactional CRUD | This commit. Builds, runs, trigger + rollback demo work. |
-| 2 | Attendance & menu CRUD polish, seed data script | A `seed.sql` or small seeding function with realistic data (~5–10 students, a week's menu) so later phases have something to schedule/forecast against. |
+| 1 | ✅ Schema + transactional CRUD | Phase 1 commit. Builds, runs, trigger + rollback demo work. |
+| 2 | ✅ Seed data script | This commit. `shrm_seed` populates 8 students, 6 inventory items, a week's menu, and today's meals + attendance. |
 | 3 | Producer-consumer threading (part 1) | Thread-safe event queue class (`server/concurrency/event_queue.h/.cpp`) with mutex + condition variable, unit-tested with a couple of producer/consumer threads pushing dummy events. |
 | 4 | Producer-consumer threading (part 2) | Wire real worker threads (attendance/prep/waste) into the queue, writing to the DB via `DbManager`. Multiple threads calling `logPrep` on the *same* item — reproduce the lost-update race on purpose. |
 | 5 | Fix the race condition | Add row-level locking (the `BEGIN IMMEDIATE` groundwork is already in `logPrep`) and show before/after: race reproduced, then fixed. This is one of your four report-highlight experiments. |

@@ -24,3 +24,21 @@ target_link_libraries(shrm_server PRIVATE
     ${SQLITE3_LIBRARIES}
     Threads::Threads
 )
+
+# Phase 2: seed-data CLI -- populates a fresh DB with sample students,
+# inventory, a week's menu, and today's meals/attendance.
+add_executable(shrm_seed
+    server/seed_main.cpp
+    server/db/db_manager.cpp
+    server/db/seed_data.cpp
+)
+
+target_include_directories(shrm_seed PRIVATE
+    server/include
+    ${SQLITE3_INCLUDE_DIRS}
+)
+
+target_link_libraries(shrm_seed PRIVATE
+    ${SQLITE3_LIBRARIES}
+    Threads::Threads
+)

@@ -13,6 +13,9 @@ DbManager::DbManager(const std::string& db_path) {
     // Busy timeout so concurrent access (Phase 2) waits briefly on a
     // locked DB instead of failing immediately with SQLITE_BUSY.
     sqlite3_busy_timeout(db_, 3000);
+    // Foreign keys are a PER-CONNECTION setting in SQLite. Putting the pragma
+    // only in schema.sql meant worker connections never enforced them.
+    sqlite3_exec(db_, "PRAGMA foreign_keys = ON;", nullptr, nullptr, nullptr);
 }
 
 DbManager::~DbManager() {

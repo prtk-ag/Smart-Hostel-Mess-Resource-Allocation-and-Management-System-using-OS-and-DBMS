@@ -7,7 +7,20 @@ four separate syllabus-topic demos bolted together.
 
 See `docs/` (or the project proposal PDF) for the full architecture writeup.
 
-## Current status: Phase 8 — IPC: separate event-generator process + pipe (on top of the Phase 4/5 concurrency work)
+## Current status: Phases 1–10 complete
+
+- **Phase 9 (deadlock):** `shrm_deadlock_demo` builds the classic two-lock deadlock on purpose
+  (worker A: inventory→alerts, worker B: alerts→inventory), detects it with timed lock attempts,
+  then shows two fixes: a global lock order (inventory always first) and back-off (timed try,
+  release, retry). Passed 12/12 repeated runs.
+- **Phase 10 (indexing):** `shrm_index_bench` loads 200,000 attendance rows and times the same
+  queries with and without `idx_attendance_meal_student`. Typical result: full table SCAN
+  about 1.8 s per 300 lookups vs index SEARCH about 1 ms (over 1,000x faster); results are checked identical.
+  Run `shrm_index_bench --rows 5000` for the paper-scale dataset.
+- **Foreign keys fix:** `PRAGMA foreign_keys = ON` now runs in the `DbManager` constructor, so every
+  worker connection enforces them (before, only the schema-loading connection did).
+
+## Phase 8 — IPC: separate event-generator process + pipe (on top of the Phase 4/5 concurrency work)
 
 What's implemented right now:
 - Normalized schema (`server/db/schema.sql`): students, inventory, meals, menu,
@@ -232,8 +245,8 @@ meaningful commit — update the repo at the end of each one.
 | 6 | ✅ Scheduler (part 1) | `Job` model + FCFS with waiting/turnaround/response metrics, Gantt chart output, and tests checked against hand-computed answers. |
 | 7 | ✅ Scheduler (part 2) | SJF + Priority on a shared engine, side-by-side comparison with FCFS, 47 tests. |
 | 8 | ✅ IPC | This commit. Separate event-generator process → pipe (stdio or named pipe, POSIX + Windows) → IPC server → queue → workers → DB. Strict line codec, 82 tests. |
-| 9 | Deadlock demo | Construct the two-thread, two-lock deadlock on purpose (`tests/test_deadlock.cpp`), show it hang, then fix with consistent lock ordering. |
-| 10 | Indexing experiment + polish | Seed a larger synthetic dataset (~5,000 rows, matching the scale used in the reference papers), measure a hot query before/after the existing indexes, capture the numbers for the report. |
+| 9 | ✅ Deadlock demo (`shrm_deadlock_demo`) | Construct the two-thread, two-lock deadlock on purpose (`tests/test_deadlock.cpp`), show it hang, then fix with consistent lock ordering. |
+| 10 | ✅ Indexing experiment (`shrm_index_bench`) | Seed a larger synthetic dataset (~5,000 rows, matching the scale used in the reference papers), measure a hot query before/after the existing indexes, capture the numbers for the report. |
 | 11+ | File logging, CLI polish, report writeup | Concurrent-safe file logger, tidy up the demo CLI, start writing the final report using the four experiment results as the centerpiece. |
 
 Adjust pacing as needed — the important thing for the mentor-facing commit

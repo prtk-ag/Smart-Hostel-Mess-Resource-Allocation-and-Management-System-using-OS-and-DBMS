@@ -183,3 +183,12 @@ target_link_libraries(shrm_ipc_test PRIVATE shrm_ipc)
 # Phase 8b: dashboard helper -- scheduler results as JSON.
 add_executable(shrm_scheduler_json server/scheduler_json.cpp)
 target_link_libraries(shrm_scheduler_json PRIVATE shrm_scheduler)
+
+# Phase 10: indexing experiment (with vs without index, query plans + timings)
+add_executable(shrm_index_bench server/index_bench.cpp)
+target_include_directories(shrm_index_bench PRIVATE ${SQLITE3_INCLUDE_DIRS})
+target_link_libraries(shrm_index_bench PRIVATE ${SQLITE3_LIBRARIES} Threads::Threads)
+
+# Phase 9: deadlock demo (opposite lock order -> detected deadlock; lock ordering and back-off fixes)
+add_executable(shrm_deadlock_demo server/deadlock_demo.cpp)
+target_link_libraries(shrm_deadlock_demo PRIVATE Threads::Threads)

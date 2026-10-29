@@ -42,3 +42,19 @@ target_link_libraries(shrm_seed PRIVATE
     ${SQLITE3_LIBRARIES}
     Threads::Threads
 )
+
+# Phase 3: thread-safe producer-consumer event queue + its test.
+# No DB/sqlite dependency yet -- this validates the queue in isolation
+# before Phase 4 wires real DB-writing worker threads on top of it.
+add_executable(shrm_queue_test
+    tests/test_event_queue.cpp
+    server/concurrency/event_queue.cpp
+)
+
+target_include_directories(shrm_queue_test PRIVATE
+    server/concurrency
+)
+
+target_link_libraries(shrm_queue_test PRIVATE
+    Threads::Threads
+)

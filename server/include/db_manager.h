@@ -57,6 +57,16 @@ public:
     void logPrep(int meal_id, int item_id, double quantity_used,
                  const std::string& prepared_by);
 
+    // DELIBERATELY UNSAFE -- exists only for the Phase 4 race-condition
+    // demo (tests/test_race_condition.cpp). Reads quantity_available,
+    // computes the new value in C++, then writes it back as a separate
+    // statement, with no transaction wrapping the two. Two threads can
+    // both read the same starting value before either writes, so one
+    // thread's deduction silently overwrites the other's -- the classic
+    // read-modify-write lost update. Never call this outside that test.
+    void logPrepUnsafe(int meal_id, int item_id, double quantity_used,
+                        const std::string& prepared_by);
+
     void logWaste(int meal_id, int item_id, double quantity_wasted);
 
     std::vector<InventoryItem> getAllInventory();

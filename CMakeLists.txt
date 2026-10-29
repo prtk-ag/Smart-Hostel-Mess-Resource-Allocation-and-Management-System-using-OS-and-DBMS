@@ -58,3 +58,41 @@ target_include_directories(shrm_queue_test PRIVATE
 target_link_libraries(shrm_queue_test PRIVATE
     Threads::Threads
 )
+
+# Phase 4: worker threads wired to the Phase 3 queue, writing to the DB
+# through DbManager -- the actual attendance/prep/waste pipeline.
+add_executable(shrm_pipeline_demo
+    server/pipeline_demo.cpp
+    server/db/db_manager.cpp
+    server/db/seed_data.cpp
+    server/concurrency/event_queue.cpp
+    server/concurrency/workers.cpp
+)
+
+target_include_directories(shrm_pipeline_demo PRIVATE
+    server/include
+    server/concurrency
+    ${SQLITE3_INCLUDE_DIRS}
+)
+
+target_link_libraries(shrm_pipeline_demo PRIVATE
+    ${SQLITE3_LIBRARIES}
+    Threads::Threads
+)
+
+# Phase 4/5: race condition demo -- logPrepUnsafe (reproduces the lost
+# update) vs logPrep (the transactional fix), same concurrent workload.
+add_executable(shrm_race_demo
+    tests/test_race_condition.cpp
+    server/db/db_manager.cpp
+)
+
+target_include_directories(shrm_race_demo PRIVATE
+    server/include
+    ${SQLITE3_INCLUDE_DIRS}
+)
+
+target_link_libraries(shrm_race_demo PRIVATE
+    ${SQLITE3_LIBRARIES}
+    Threads::Threads
+)

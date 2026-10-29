@@ -3,6 +3,8 @@
 #include <sstream>
 #include <stdexcept>
 #include <iostream>
+#include <thread>
+#include <chrono>
 
 DbManager::DbManager(const std::string& db_path) {
     if (sqlite3_open(db_path.c_str(), &db_) != SQLITE_OK) {
@@ -180,6 +182,49 @@ void DbManager::logPrep(int meal_id, int item_id, double quantity_used,
         }
         throw;
     }
+}
+
+// DELIBERATELY UNSAFE. See the comment on the declaration in db_manager.h.
+// A short sleep is inserted between the read and the write purely to
+// widen the interleaving window so the race reproduces reliably on a
+// fast machine with few threads -- the bug exists without it too, it
+// would just show up less predictably run to run.
+void DbManager::logPrepUnsafe(int meal_id, int item_id, double quantity_used,
+                               const std::string& prepared_by) {
+    auto item = getInventoryItem(item_id);
+    if (!item.has_value()) {
+        throw std::runtime_error("logPrepUnsafe failed: item_id " + std::to_string(item_id) + " not found");
+    }
+    double new_qty = item->quantity_available - quantity_used; // computed in C++, using a
+                                                                 // value that may already be stale
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));  // widen the race window
+
+    sqlite3_stmt* stmt;
+    const char* update_sql = "UPDATE inventory SET quantity_available = ? WHERE item_id = ?;";
+    sqlite3_prepare_v2(db_, update_sql, -1, &stmt, nullptr);
+    sqlite3_bind_double(stmt, 1, new_qty);
+    sqlite3_bind_int(stmt, 2, item_id);
+    if (sqlite3_step(stmt) != SQLITE_DONE) {
+        std::string err = sqlite3_errmsg(db_);
+        sqlite3_finalize(stmt);
+        throw std::runtime_error("logPrepUnsafe update failed: " + err);
+    }
+    sqlite3_finalize(stmt);
+
+    const char* insert_sql =
+        "INSERT INTO meal_prep_logs (meal_id, item_id, quantity_used, prepared_by) "
+        "VALUES (?, ?, ?, ?);";
+    sqlite3_prepare_v2(db_, insert_sql, -1, &stmt, nullptr);
+    sqlite3_bind_int(stmt, 1, meal_id);
+    sqlite3_bind_int(stmt, 2, item_id);
+    sqlite3_bind_double(stmt, 3, quantity_used);
+    sqlite3_bind_text(stmt, 4, prepared_by.c_str(), -1, SQLITE_TRANSIENT);
+    if (sqlite3_step(stmt) != SQLITE_DONE) {
+        std::string err = sqlite3_errmsg(db_);
+        sqlite3_finalize(stmt);
+        throw std::runtime_error("logPrepUnsafe insert failed: " + err);
+    }
+    sqlite3_finalize(stmt);
 }
 
 void DbManager::logWaste(int meal_id, int item_id, double quantity_wasted) {

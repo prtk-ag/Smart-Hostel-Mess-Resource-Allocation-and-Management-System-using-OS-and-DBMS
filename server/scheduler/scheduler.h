@@ -14,6 +14,19 @@
 // Phase 7 run several algorithms over the same input and compare them.
 ScheduleResult scheduleFCFS(std::vector<Job> jobs);
 
+// Shortest Job First (non-preemptive): whenever the station is free, run the
+// already-arrived job with the smallest burst time. Ties: earlier arrival,
+// then lower id. Once a job starts it is never interrupted, so a long job that
+// got in first still blocks a short one that arrives a minute later.
+// Minimises average waiting time when everything arrives together; long jobs
+// can starve if short ones keep arriving.
+ScheduleResult scheduleSJF(std::vector<Job> jobs);
+
+// Priority (non-preemptive): run the already-arrived job with the lowest
+// priority number (1 = most urgent). Ties: earlier arrival, then lower id.
+// Low-priority jobs can starve if urgent ones keep arriving (no aging here).
+ScheduleResult schedulePriority(std::vector<Job> jobs);
+
 // Fills in the per-job waiting/turnaround/response times and the averages
 // for a list of jobs that have already been placed in execution order with
 // start times chosen. Shared by every algorithm so they can't disagree on

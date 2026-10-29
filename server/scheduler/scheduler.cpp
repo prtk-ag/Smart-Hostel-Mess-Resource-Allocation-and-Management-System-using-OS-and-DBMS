@@ -64,6 +64,58 @@ ScheduleResult scheduleFCFS(std::vector<Job> jobs) {
 
 namespace {
 
+// Shared engine for the non-preemptive "pick the best ready job" algorithms.
+// `better(a, b)` is true when a should run before b; it must be a strict
+// total order (callers finish with the id tiebreak) so output is deterministic.
+template <typename Better>
+ScheduleResult scheduleNonPreemptive(const std::string& name, std::vector<Job> jobs, Better better) {
+    std::vector<JobResult> executed;
+    executed.reserve(jobs.size());
+
+    int clock = 0;
+    while (!jobs.empty()) {
+        // Best job among those that have already arrived.
+        auto best = jobs.end();
+        for (auto it = jobs.begin(); it != jobs.end(); ++it) {
+            if (it->arrival_time <= clock && (best == jobs.end() || better(*it, *best))) best = it;
+        }
+        if (best == jobs.end()) {
+            // Nobody is ready: station idles until the next arrival.
+            int next = jobs.front().arrival_time;
+            for (const Job& j : jobs) next = std::min(next, j.arrival_time);
+            clock = next;
+            continue;
+        }
+        JobResult r;
+        r.job = *best;
+        r.start_time = clock;
+        clock += best->burst_time;
+        executed.push_back(r);
+        jobs.erase(best);
+    }
+    return buildResult(name, std::move(executed));
+}
+
+} // namespace
+
+ScheduleResult scheduleSJF(std::vector<Job> jobs) {
+    return scheduleNonPreemptive("SJF", std::move(jobs), [](const Job& a, const Job& b) {
+        if (a.burst_time != b.burst_time) return a.burst_time < b.burst_time;
+        if (a.arrival_time != b.arrival_time) return a.arrival_time < b.arrival_time;
+        return a.id < b.id;
+    });
+}
+
+ScheduleResult schedulePriority(std::vector<Job> jobs) {
+    return scheduleNonPreemptive("Priority", std::move(jobs), [](const Job& a, const Job& b) {
+        if (a.priority != b.priority) return a.priority < b.priority;
+        if (a.arrival_time != b.arrival_time) return a.arrival_time < b.arrival_time;
+        return a.id < b.id;
+    });
+}
+
+namespace {
+
 struct Segment {
     std::string label;
     int start;
